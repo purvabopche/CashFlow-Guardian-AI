@@ -21,9 +21,21 @@ export function calculateSummary(
   safeBuffer: number,
   transactions: Transaction[] = []
 ): CashFlowSummary {
-  const netCashFlow = monthlyInflow - monthlyOutflow;
+  // Dynamically aggregate from transactions if present
+  const recentExpenses = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const recentIncome = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const effectiveInflow = recentIncome > 0 ? Math.max(monthlyInflow, recentIncome) : monthlyInflow;
+  const effectiveOutflow = recentExpenses > 0 ? Math.max(monthlyOutflow, recentExpenses) : monthlyOutflow;
+
+  const netCashFlow = effectiveInflow - effectiveOutflow;
   const projected30Day = currentBalance + netCashFlow;
-  const netBurn = Math.max(0, monthlyOutflow - monthlyInflow);
+  const netBurn = Math.max(0, effectiveOutflow - effectiveInflow);
   const dailyBurn = netBurn / 30;
   const runwayDays = dailyBurn > 0 ? Math.max(1, Math.floor(currentBalance / dailyBurn)) : 180;
 
@@ -32,19 +44,19 @@ export function calculateSummary(
   
   // A. Reserve Cushion Factor (up to +/- 25 pts)
   const bufferRatio = currentBalance / Math.max(safeBuffer, 1);
-  if (bufferRatio >= 2.0) safetyScore += 18;
-  else if (bufferRatio >= 1.3) safetyScore += 10;
-  else if (bufferRatio >= 1.0) safetyScore += 4;
-  else if (bufferRatio >= 0.7) safetyScore -= 14;
-  else safetyScore -= 28;
+  if (bufferRatio >= 2.2) safetyScore += 20;
+  else if (bufferRatio >= 1.4) safetyScore += 12;
+  else if (bufferRatio >= 1.0) safetyScore += 5;
+  else if (bufferRatio >= 0.7) safetyScore -= 15;
+  else safetyScore -= 30;
 
   // B. Net Flow Surplus/Deficit Factor (up to +/- 20 pts)
-  if (monthlyInflow >= monthlyOutflow) {
-    const surplusRatio = (monthlyInflow - monthlyOutflow) / Math.max(monthlyOutflow, 1);
-    safetyScore += Math.min(16, Math.round(surplusRatio * 35));
+  if (effectiveInflow >= effectiveOutflow) {
+    const surplusRatio = (effectiveInflow - effectiveOutflow) / Math.max(effectiveOutflow, 1);
+    safetyScore += Math.min(18, Math.round(surplusRatio * 35));
   } else {
-    const deficitRatio = (monthlyOutflow - monthlyInflow) / Math.max(monthlyOutflow, 1);
-    safetyScore -= Math.min(24, Math.round(deficitRatio * 45));
+    const deficitRatio = (effectiveOutflow - effectiveInflow) / Math.max(effectiveOutflow, 1);
+    safetyScore -= Math.min(25, Math.round(deficitRatio * 45));
   }
 
   // C. Discretionary Spending Volatility
@@ -52,20 +64,23 @@ export function calculateSummary(
     .filter(t => t.type === 'expense' && t.isDiscretionary)
     .reduce((s, t) => s + t.amount, 0);
   
-  const totalExp = Math.max(monthlyOutflow, 1);
+  const totalExp = Math.max(effectiveOutflow, 1);
   const discRatio = discretionarySum / totalExp;
-  if (discRatio > 0.45) safetyScore -= 8;
-  else if (discRatio < 0.25) safetyScore += 6;
+  if (discRatio > 0.40) safetyScore -= 8;
+  else if (discRatio < 0.20) safetyScore += 6;
 
-  safetyScore = Math.max(6, Math.min(98, Math.round(safetyScore)));
+  safetyScore = Math.max(6, Math.min(99, Math.round(safetyScore)));
 
-  // Estimate danger date (approx 12-18 days if burn is negative)
+  // Estimate exact danger breach date
   let dangerDayCount = 0;
+  let dangerDaysFromNow = 12;
   let dangerDate: string | null = null;
   const now = new Date();
 
-  if (projected30Day < safeBuffer || currentBalance < safeBuffer * 1.2) {
-    const daysToDeficit = Math.max(3, Math.min(26, Math.floor((currentBalance - safeBuffer) / Math.max(dailyBurn || 450, 100))));
+  if (projected30Day < safeBuffer || currentBalance < safeBuffer * 1.3) {
+    const estimatedDailyDepletion = dailyBurn > 0 ? dailyBurn : (effectiveOutflow * 0.4) / 15;
+    const daysToDeficit = Math.max(3, Math.min(24, Math.floor((currentBalance - safeBuffer * 0.8) / Math.max(estimatedDailyDepletion, 350))));
+    dangerDaysFromNow = daysToDeficit;
     dangerDayCount = Math.max(4, 30 - daysToDeficit);
     const targetDate = new Date(now.getTime() + daysToDeficit * 24 * 60 * 60 * 1000);
     dangerDate = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -73,8 +88,8 @@ export function calculateSummary(
 
   return {
     currentBalance,
-    monthlyInflow,
-    monthlyOutflow,
+    monthlyInflow: effectiveInflow,
+    monthlyOutflow: effectiveOutflow,
     netCashFlow,
     projected30DayBalance: projected30Day,
     cashHealthScore: safetyScore,
@@ -83,6 +98,7 @@ export function calculateSummary(
     netBurnRate: netBurn,
     dangerDayCount,
     dangerDate,
+    dangerDaysFromNow,
     changeVsLastMonth: {
       balance: +4.2,
       inflow: +8.5,
@@ -103,6 +119,8 @@ export function generateForecastTimeline(
   scenarioParams?: Partial<ScenarioParams>
 ): ForecastData {
   const extraSpendWeek = scenarioParams?.extraSpendingThisWeek || 0;
+  const emergencyFunding = scenarioParams?.emergencyFundingAmount || 0;
+  const newRecurringExpense = scenarioParams?.newRecurringExpenseAmount || 0;
   const delayDays = scenarioParams?.customerPaymentDelayDays || 0;
   const foodReductionPct = scenarioParams?.foodExpenseReductionPercent || 0;
   const dailyTrim = scenarioParams?.dailyDiscretionaryTrim || 0;
@@ -113,9 +131,9 @@ export function generateForecastTimeline(
   const adjustedMonthlyInflow = monthlyInflow * (1 + revChangePct / 100);
   const baseDailyInflow = adjustedMonthlyInflow / 30;
   
-  // Calculate daily outflow factoring food reduction and daily trim
+  // Calculate daily outflow factoring food reduction, daily trim, and new recurring tools
   const dailyDiscretionarySaving = (foodReductionPct > 0 ? (monthlyOutflow * 0.22 * (foodReductionPct / 100)) / 30 : 0) + dailyTrim;
-  const baseDailyOutflow = Math.max(100, (monthlyOutflow / 30) - dailyDiscretionarySaving);
+  const baseDailyOutflow = Math.max(80, (monthlyOutflow / 30) - dailyDiscretionarySaving + (newRecurringExpense / 30));
 
   const now = new Date();
 
@@ -141,11 +159,11 @@ export function generateForecastTimeline(
 
   // 2. Generate Forward Forecast Days
   const forecastDays: ForecastDay[] = [];
-  let runningBalance = currentBalance;
-  let lowestPoint = currentBalance;
+  let runningBalance = currentBalance + emergencyFunding; // apply emergency capital infusion
+  let lowestPoint = runningBalance;
   let daysBelowThreshold = 0;
   let predictedBreachDate: string | null = null;
-  let totalInflow = 0;
+  let totalInflow = emergencyFunding;
   let totalOutflow = 0;
 
   for (let i = 0; i < daysCount; i++) {
@@ -163,11 +181,16 @@ export function generateForecastTimeline(
 
     const events: string[] = [];
 
+    // Emergency capital injection flag
+    if (i === 0 && emergencyFunding > 0) {
+      events.push(`Emergency Capital Infusion: +₹${emergencyFunding.toLocaleString()}`);
+    }
+
     // One-time scenario extra spending applied across week 1 (days 1 to 5)
     if (i < 5 && extraSpendWeek > 0) {
       const dailyExtra = extraSpendWeek / 5;
       dayOutflow += dailyExtra;
-      events.push(`Extra Spend: +₹${Math.round(dailyExtra).toLocaleString()}/day`);
+      events.push(`Extra Outflow: +₹${Math.round(dailyExtra).toLocaleString()}/day`);
     }
 
     // Recurring payroll events (15th and end of month)
@@ -179,14 +202,14 @@ export function generateForecastTimeline(
     if (dayOfMonth === 30 || dayOfMonth === 31 || i === 29) {
       const payrollAmount = monthlyOutflow * 0.32;
       dayOutflow += payrollAmount;
-      events.push('Month-End Commitments & Tax');
+      events.push('Month-End Commitments & Taxes');
     }
 
     // Rent / Lease on 1st of month
     if (dayOfMonth === 1 || i === 0) {
       const rentAmount = monthlyOutflow * 0.15;
       dayOutflow += rentAmount;
-      events.push('Studio / House Rent');
+      events.push('Studio / Workspace Rent');
     }
 
     // Invoices received (delayed by scenario parameter)
@@ -252,7 +275,7 @@ export function generateForecastTimeline(
     });
   }
 
-  // Combine historical and forecast for multi-phase visualization
+  // Combine historical and forecast for multi-phase timeline
   const combinedTimeline = [
     ...historicalDays.map(h => ({
       date: h.date,
@@ -292,13 +315,18 @@ export function computeRiskPrediction(
   scenarioParams?: Partial<ScenarioParams>
 ): RiskPrediction {
   const extraSpendWeek = scenarioParams?.extraSpendingThisWeek || 0;
+  const emergencyFunding = scenarioParams?.emergencyFundingAmount || 0;
+  const newRecurringExpense = scenarioParams?.newRecurringExpenseAmount || 0;
   const delayDays = scenarioParams?.customerPaymentDelayDays || 0;
   const foodReductionPct = scenarioParams?.foodExpenseReductionPercent || 0;
   const dailyTrim = scenarioParams?.dailyDiscretionaryTrim || 0;
   const revChangePct = scenarioParams?.monthlyRevenueChangePercent || 0;
   const activeBuffer = scenarioParams?.safeBufferAmount ?? safeBuffer;
 
+  const effectiveBalance = currentBalance + emergencyFunding;
   const adjustedInflow = monthlyInflow * (1 + revChangePct / 100);
+  const adjustedOutflow = monthlyOutflow + newRecurringExpense;
+
   const overdueTotal = invoices
     .filter((inv) => inv.status === 'overdue')
     .reduce((sum, inv) => sum + inv.amount, 0);
@@ -312,8 +340,8 @@ export function computeRiskPrediction(
     .reduce((sum, p) => sum + p.amount, 0);
 
   // Net headroom calculation
-  const netHeadroom = currentBalance - activeBuffer - extraSpendWeek;
-  const monthlyBurn = Math.max(0, monthlyOutflow - adjustedInflow);
+  const netHeadroom = effectiveBalance - activeBuffer - extraSpendWeek;
+  const monthlyBurn = Math.max(0, adjustedOutflow - adjustedInflow);
 
   let rawProbability = 22;
 
@@ -326,13 +354,14 @@ export function computeRiskPrediction(
     else if (daysToBuffer < 40) rawProbability = 28 + (40 - daysToBuffer) * 1.1;
     else rawProbability = Math.max(6, 24 - (daysToBuffer - 40) * 0.3);
   } else {
-    rawProbability = Math.max(5, 18 - ((adjustedInflow - monthlyOutflow) / Math.max(monthlyOutflow, 1)) * 25);
+    rawProbability = Math.max(5, 18 - ((adjustedInflow - adjustedOutflow) / Math.max(adjustedOutflow, 1)) * 25);
   }
 
-  // Adjust for delay, extra capex, and mitigations
-  const delayWeight = delayDays * 1.2 + (overdueTotal / Math.max(1, currentBalance)) * 12;
+  // Adjust for delay, extra capex, emergency funding, and mitigations
+  const delayWeight = delayDays * 1.2 + (overdueTotal / Math.max(1, effectiveBalance)) * 12;
   const extraSpendWeight = (extraSpendWeek / Math.max(1, activeBuffer)) * 18;
-  const mitigationCredit = (foodReductionPct * 0.35) + (dailyTrim > 0 ? 8 : 0);
+  const emergencyCredit = (emergencyFunding / Math.max(1, activeBuffer)) * 25;
+  const mitigationCredit = (foodReductionPct * 0.35) + (dailyTrim > 0 ? 8 : 0) + emergencyCredit;
   
   const riskProbability = Math.min(98.5, Math.max(3.5, Math.round((rawProbability + delayWeight + extraSpendWeight - mitigationCredit) * 10) / 10));
 
@@ -345,7 +374,7 @@ export function computeRiskPrediction(
   else if (riskProbability >= 48) shortageWindow = 'Days 20 – 28 (Mid-to-End Month Pressure)';
   else if (riskProbability >= 32) shortageWindow = 'Days 35 – 45 (Moderate Horizon Risk)';
 
-  const runwayDays = monthlyBurn > 0 ? Math.max(2, Math.floor(currentBalance / (monthlyBurn / 30))) : 180;
+  const runwayDays = monthlyBurn > 0 ? Math.max(2, Math.floor(effectiveBalance / (monthlyBurn / 30))) : 180;
   const confidenceScore = Math.min(96.5, Math.max(82.0, Math.round((89.4 + (invoices.length > 3 ? 3.5 : -2.0)) * 10) / 10));
 
   // Explainable AI Feature Attribution (SHAP values)
@@ -357,25 +386,28 @@ export function computeRiskPrediction(
       direction: 'increases_risk',
       description: `₹${overdueTotal.toLocaleString()} in overdue invoices + ${delayDays}d simulated collection delay creates an immediate cash timing deficit.`,
       category: 'Receivables',
-      shapValue: +0.34
+      shapValue: +0.34,
+      isRemediable: true
     },
     {
       id: 'f2',
       name: 'Upcoming Non-Negotiable Commitments (Rent & Payroll)',
-      impactPercent: Math.min(38, Math.max(14, Math.round((22 + (criticalPaymentsTotal / Math.max(1, currentBalance)) * 12) * 10) / 10)),
+      impactPercent: Math.min(38, Math.max(14, Math.round((22 + (criticalPaymentsTotal / Math.max(1, effectiveBalance)) * 12) * 10) / 10)),
       direction: 'increases_risk',
       description: `₹${criticalPaymentsTotal.toLocaleString()} in fixed, non-deferrable disbursements due within the 30-day window.`,
       category: 'Outflow',
-      shapValue: +0.26
+      shapValue: +0.26,
+      isRemediable: true
     },
     {
       id: 'f3',
       name: 'Target Cash Safety Cushion Ratio',
-      impactPercent: Math.min(28, Math.max(8, Math.round((18 - (currentBalance / Math.max(1, activeBuffer)) * 4) * 10) / 10)),
-      direction: currentBalance < activeBuffer * 1.3 ? 'increases_risk' : 'decreases_risk',
-      description: `Current liquidity is ${(currentBalance / Math.max(1, activeBuffer)).toFixed(1)}x of target safe buffer (₹${activeBuffer.toLocaleString()}).`,
+      impactPercent: Math.min(28, Math.max(8, Math.round((18 - (effectiveBalance / Math.max(1, activeBuffer)) * 4) * 10) / 10)),
+      direction: effectiveBalance < activeBuffer * 1.3 ? 'increases_risk' : 'decreases_risk',
+      description: `Current liquidity is ${(effectiveBalance / Math.max(1, activeBuffer)).toFixed(1)}x of target safe buffer (₹${activeBuffer.toLocaleString()}).`,
       category: 'Liquidity',
-      shapValue: currentBalance < activeBuffer * 1.3 ? +0.18 : -0.15
+      shapValue: effectiveBalance < activeBuffer * 1.3 ? +0.18 : -0.15,
+      isRemediable: false
     },
     {
       id: 'f4',
@@ -384,7 +416,8 @@ export function computeRiskPrediction(
       direction: foodReductionPct > 15 || dailyTrim > 200 ? 'decreases_risk' : 'increases_risk',
       description: `Food delivery and shopping account for ~26% of monthly outflows. Reducing this creates immediate buffer headroom.`,
       category: 'Discretionary',
-      shapValue: foodReductionPct > 15 ? -0.19 : +0.14
+      shapValue: foodReductionPct > 15 ? -0.19 : +0.14,
+      isRemediable: true
     }
   ];
 
@@ -393,7 +426,7 @@ export function computeRiskPrediction(
   const keyFactors = [
     `Uncollected pending/overdue client invoices total ₹${(overdueTotal + pendingTotal).toLocaleString()}`,
     `Upcoming fixed rent & contractor liabilities total ₹${criticalPaymentsTotal.toLocaleString()}`,
-    `Cash reserve buffer coverage is at ${Math.round((currentBalance / Math.max(1, activeBuffer)) * 100)}% of target threshold`
+    `Cash reserve buffer coverage is at ${Math.round((effectiveBalance / Math.max(1, activeBuffer)) * 100)}% of target threshold`
   ];
 
   return {
@@ -426,6 +459,8 @@ export function runScenarioSimulation(
 ): ScenarioResult {
   const defaultParams: ScenarioParams = {
     extraSpendingThisWeek: 0,
+    emergencyFundingAmount: 0,
+    newRecurringExpenseAmount: 0,
     customerPaymentDelayDays: 0,
     foodExpenseReductionPercent: 0,
     dailyDiscretionaryTrim: 0,
@@ -538,29 +573,69 @@ export function generateInsightsList(
 ): ActionInsight[] {
   const insights: ActionInsight[] = [];
 
-  // 1. Natural Data-Driven Spend Velocity Insight
+  // Calculate baseline risk
+  const baselineRisk = computeRiskPrediction(currentBalance, monthlyInflow, monthlyOutflow, safeBuffer, invoices, payments);
+
+  // 1. Dynamic Specific Contractor/Payment Rescheduling Recommendation
+  const flexiblePayment = payments.find(p => p.isFlexible || p.urgency === 'High') || payments[0];
+  if (flexiblePayment) {
+    const simShiftRisk = computeRiskPrediction(
+      currentBalance,
+      monthlyInflow,
+      monthlyOutflow,
+      safeBuffer,
+      invoices,
+      payments,
+      { vendorPaymentShiftDays: 10 }
+    );
+
+    insights.push({
+      id: 'ins-dyn-vendor-01',
+      title: `Postpone ₹${flexiblePayment.amount.toLocaleString()} ${flexiblePayment.vendor} by 5–10 Days`,
+      description: `Delaying the ₹${flexiblePayment.amount.toLocaleString()} ${flexiblePayment.vendor} disbursement by 5–10 days reduces your shortage probability from ${baselineRisk.riskProbability}% to ${simShiftRisk.riskProbability}% and keeps your balance above the ₹${safeBuffer.toLocaleString()} safety threshold.`,
+      category: 'Vendor Payment Timing',
+      priority: 'Critical',
+      potentialCashImpact: flexiblePayment.amount,
+      runwayDaysImpact: 14,
+      recommendedAction: `Request a milestone split or 10-day payment extension with ${flexiblePayment.vendor}.`,
+      status: 'open',
+      actionType: 'reschedule_payment',
+      riskReductionEstimate: {
+        fromRisk: baselineRisk.riskProbability,
+        toRisk: simShiftRisk.riskProbability
+      },
+      templateData: {
+        vendor: flexiblePayment.vendor,
+        amount: flexiblePayment.amount,
+        dueDate: flexiblePayment.dueDate,
+        suggestedDate: 'Mid-to-End Month Extension'
+      }
+    });
+  }
+
+  // 2. Dynamic Spending Trend Vulnerability Alert
   const now = new Date();
   const dangerDateStr = new Date(now.getTime() + 12 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   insights.push({
-    id: 'ins-trend-01',
+    id: 'ins-trend-02',
     title: `Spending Trend Vulnerability Alert (${dangerDateStr})`,
-    description: `Your current spending trend suggests that your balance may fall below ₹${safeBuffer.toLocaleString()} around ${dangerDateStr} when mid-month payments collide with uncollected receivables.`,
+    description: `Your current spending trend suggests that your balance may fall below ₹${safeBuffer.toLocaleString()} around ${dangerDateStr} when mid-month obligations collide with uncollected receivables.`,
     category: 'Liquidity & Reserves',
     priority: 'Critical',
     potentialCashImpact: safeBuffer,
-    runwayDaysImpact: 14,
+    runwayDaysImpact: 12,
     recommendedAction: 'Delay discretionary capital purchases and follow up on overdue customer invoices immediately.',
     status: 'open',
     actionType: 'cut_discretionary'
   });
 
-  // 2. Subscription & Recurring Expense Insight
+  // 3. Subscription & Recurring Expense Ratio Insight
   const recurringTotal = payments.reduce((sum, p) => sum + p.amount, 0);
   const recurringPct = Math.round((recurringTotal / Math.max(monthlyOutflow, 1)) * 100);
   insights.push({
-    id: 'ins-rec-02',
-    title: `Subscription & Recurring Ratio (${recurringPct}% of Outflow)`,
-    description: `Your subscription and recurring fixed commitments account for ${recurringPct}% of your monthly expenses (₹${recurringTotal.toLocaleString()}/mo).`,
+    id: 'ins-rec-03',
+    title: `Subscription & Recurring Ratio (${recurringPct}% of Outflows)`,
+    description: `Your subscription and recurring payments account for ${recurringPct}% of your monthly expenses (₹${recurringTotal.toLocaleString()}/mo).`,
     category: 'Recurring Subscriptions',
     priority: 'Medium',
     potentialCashImpact: Math.round(recurringTotal * 0.15),
@@ -574,26 +649,40 @@ export function generateInsightsList(
     }
   });
 
-  // 3. Discretionary Spending Optimization (₹300/day trim)
+  // 4. Discretionary Daily Spending Trim (₹300/day trim)
+  const simTrimRisk = computeRiskPrediction(
+    currentBalance,
+    monthlyInflow,
+    monthlyOutflow,
+    safeBuffer,
+    invoices,
+    payments,
+    { dailyDiscretionaryTrim: 300 }
+  );
+
   insights.push({
-    id: 'ins-disc-03',
-    title: 'Discretionary Daily Spending Trim',
-    description: 'Reducing discretionary spending by ₹300 per day could improve your Cash Safety Score from 58 to 74 and add ~9 days of operating runway.',
+    id: 'ins-disc-04',
+    title: 'Discretionary Daily Spending Trim (₹300/day)',
+    description: `Reducing discretionary spending by ₹300 per day could improve your Cash Safety Score and reduce shortage probability from ${baselineRisk.riskProbability}% to ${simTrimRisk.riskProbability}%.`,
     category: 'Discretionary Spending',
     priority: 'High',
     potentialCashImpact: 9000,
     runwayDaysImpact: 9,
-    recommendedAction: 'Cap daily dining, food delivery, and impulse online checkout budgets during mid-month deficit windows.',
+    recommendedAction: 'Cap daily dining, food delivery, and impulse checkout budgets during mid-month deficit windows.',
     status: 'open',
-    actionType: 'cut_discretionary'
+    actionType: 'cut_discretionary',
+    riskReductionEstimate: {
+      fromRisk: baselineRisk.riskProbability,
+      toRisk: simTrimRisk.riskProbability
+    }
   });
 
-  // 4. Overdue Invoices Collection Accelerator
+  // 5. Overdue Invoices Collection Accelerator
   const overdueInvoices = invoices.filter((i) => i.status === 'overdue');
   if (overdueInvoices.length > 0) {
     const highestOverdue = overdueInvoices.reduce((max, i) => (i.amount > max.amount ? i : max), overdueInvoices[0]);
     insights.push({
-      id: 'ins-inv-04',
+      id: 'ins-inv-05',
       title: `Accelerate Overdue Receivables: ${highestOverdue.client}`,
       description: `Invoice #${highestOverdue.id} for ₹${highestOverdue.amount.toLocaleString()} is ${highestOverdue.daysOverdue || 12} days overdue. Recovering this closes 78% of the projected mid-month cash deficit.`,
       category: 'Receivable Management',
@@ -609,30 +698,6 @@ export function generateInsightsList(
         invoiceId: highestOverdue.id,
         daysOverdue: highestOverdue.daysOverdue || 12,
         suggestedEmail: `Hi ${highestOverdue.client} Accounts Payable Team,\n\nWe hope this email finds you well. We are following up regarding invoice #${highestOverdue.id} for ₹${highestOverdue.amount.toLocaleString()} (due ${highestOverdue.dueDate}), which is currently pending disbursement.\n\nCould you please confirm if this batch has been approved for processing? If needed, our direct UPI / bank transfer routing information is attached.\n\nThank you for your partnership,\nFinance Operations`
-      }
-    });
-  }
-
-  // 5. Vendor payment rescheduling
-  const flexiblePayments = payments.filter((p) => p.isFlexible);
-  if (flexiblePayments.length > 0) {
-    const topFlexible = flexiblePayments.reduce((max, p) => (p.amount > max.amount ? p : max), flexiblePayments[0]);
-    insights.push({
-      id: 'ins-pay-05',
-      title: `Negotiate 10-Day Extension for ${topFlexible.vendor}`,
-      description: `Postponing this ₹${topFlexible.amount.toLocaleString()} disbursement by 10 days bridges the liquidity gap before primary invoice settlement without incurring penalties.`,
-      category: 'Vendor Payment Timing',
-      priority: 'High',
-      potentialCashImpact: topFlexible.amount,
-      runwayDaysImpact: 10,
-      recommendedAction: 'Request a standard milestone payment split or 10-day extension.',
-      status: 'open',
-      actionType: 'reschedule_payment',
-      templateData: {
-        vendor: topFlexible.vendor,
-        amount: topFlexible.amount,
-        dueDate: topFlexible.dueDate,
-        suggestedDate: 'End of Month + 10 Days'
       }
     });
   }

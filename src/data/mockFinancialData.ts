@@ -1,190 +1,53 @@
 import { FinancialDataset, Transaction } from '../types/financial';
 
-const generateHistoricalTransactions = (): Transaction[] => [
-  {
-    id: 'tx-101',
-    date: '2026-08-25',
-    title: 'Swiggy Gourmet Dinner & Groceries',
-    category: 'Food & Dining',
-    type: 'expense',
-    amount: 1450,
-    isRecurring: false,
-    isDiscretionary: true,
-    merchant: 'Swiggy Instamart'
-  },
-  {
-    id: 'tx-102',
-    date: '2026-08-24',
-    title: 'Uber Premier Airport Commute',
-    category: 'Travel & Commute',
-    type: 'expense',
-    amount: 1120,
-    isRecurring: false,
-    isDiscretionary: true,
-    merchant: 'Uber India'
-  },
-  {
-    id: 'tx-103',
-    date: '2026-08-22',
-    title: 'Figma & Notion Team Licenses',
-    category: 'Subscriptions',
-    type: 'expense',
-    amount: 3200,
-    isRecurring: true,
-    isDiscretionary: false,
-    merchant: 'Figma Inc'
-  },
-  {
-    id: 'tx-104',
-    date: '2026-08-20',
-    title: 'Freelance Client Retainer Milestone',
-    category: 'Income',
-    type: 'income',
-    amount: 38000,
-    isRecurring: false,
-    isDiscretionary: false,
-    merchant: 'Razorpay Payouts'
-  },
-  {
-    id: 'tx-105',
-    date: '2026-08-18',
-    title: 'Blue Tokai Cafe & Team Breakfast',
-    category: 'Food & Dining',
-    type: 'expense',
-    amount: 880,
-    isRecurring: false,
-    isDiscretionary: true,
-    merchant: 'Blue Tokai Coffee'
-  },
-  {
-    id: 'tx-106',
-    date: '2026-08-15',
-    title: 'AWS Cloud Hosting Cluster',
-    category: 'Subscriptions',
-    type: 'expense',
-    amount: 4800,
-    isRecurring: true,
-    isDiscretionary: false,
-    merchant: 'Amazon Web Services'
-  },
-  {
-    id: 'tx-107',
-    date: '2026-08-12',
-    title: 'Nature Basket Organic Groceries',
-    category: 'Groceries',
-    type: 'expense',
-    amount: 3400,
-    isRecurring: false,
-    isDiscretionary: false,
-    merchant: 'Nature Basket'
-  },
-  {
-    id: 'tx-108',
-    date: '2026-08-10',
-    title: 'Airtel Fiber Broadband & 5G',
-    category: 'Utilities',
-    type: 'expense',
-    amount: 1499,
-    isRecurring: true,
-    isDiscretionary: false,
-    merchant: 'Airtel Digital'
-  },
-  {
-    id: 'tx-109',
-    date: '2026-08-08',
-    title: 'Zomato Food Delivery',
-    category: 'Food & Dining',
-    type: 'expense',
-    amount: 720,
-    isRecurring: false,
-    isDiscretionary: true,
-    merchant: 'Zomato Ltd'
-  },
-  {
-    id: 'tx-110',
-    date: '2026-08-05',
-    title: 'Amazon Equipment & Ergonomic Monitor',
-    category: 'Equipment & Capex',
-    type: 'expense',
-    amount: 12500,
-    isRecurring: false,
-    isDiscretionary: true,
-    merchant: 'Amazon India'
-  },
-  {
-    id: 'tx-111',
-    date: '2026-08-01',
-    title: 'Studio Apartment Rent & Maintenance',
-    category: 'Rent & Living',
-    type: 'expense',
-    amount: 24000,
-    isRecurring: true,
-    isDiscretionary: false,
-    merchant: 'Direct Bank NEFT'
-  },
-  {
-    id: 'tx-112',
-    date: '2026-08-01',
-    title: 'Monthly Primary Client Retainer Deposit',
-    category: 'Income',
-    type: 'income',
-    amount: 55000,
-    isRecurring: true,
-    isDiscretionary: false,
-    merchant: 'Stripe Direct Deposit'
-  }
-];
-
-export const BUSINESS_DATASETS: Record<string, FinancialDataset> = {
-  freelancer_pro: {
-    id: 'freelancer_pro',
-    name: 'Aarav Sharma (Product Designer & Agency)',
-    industry: 'Design & Independent Consulting',
-    description: 'High-growth independent design consultant with lump-sum client milestone retainers, SaaS overhead, and recurring home-office rent.',
+export const HACKATHON_SCENARIOS: Record<string, FinancialDataset> = {
+  critical_shortage: {
+    id: 'critical_shortage',
+    name: '🔴 Critical Shortage (Deficit in 12 Days)',
+    industry: 'Independent Consulting / SME',
+    description: 'Imminent mid-month liquidity crisis: ₹28,500 overdue client invoice collides with ₹22,000 fixed rent and ₹15,000 contractor payroll.',
     currentBalance: 34500,
     monthlyInflow: 68000,
-    monthlyOutflow: 62000,
+    monthlyOutflow: 74000,
     safeBufferThreshold: 15000,
-    transactions: generateHistoricalTransactions(),
+    transactions: [
+      { id: 'tx-c1', date: '2026-08-25', title: 'Zomato & Dining Out', category: 'Food & Dining', type: 'expense', amount: 1650, isRecurring: false, isDiscretionary: true },
+      { id: 'tx-c2', date: '2026-08-24', title: 'Uber Premier City Rides', category: 'Travel & Commute', type: 'expense', amount: 1280, isRecurring: false, isDiscretionary: true },
+      { id: 'tx-c3', date: '2026-08-22', title: 'Figma, Adobe CC & Notion Stack', category: 'Subscriptions', type: 'expense', amount: 4800, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-c4', date: '2026-08-18', title: 'Nature Basket Groceries', category: 'Groceries', type: 'expense', amount: 3600, isRecurring: false, isDiscretionary: false },
+      { id: 'tx-c5', date: '2026-08-15', title: 'AWS Cloud Compute Fleet', category: 'Subscriptions', type: 'expense', amount: 6200, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-c6', date: '2026-08-10', title: 'Airtel Fiber Gigabit Broadband', category: 'Utilities', type: 'expense', amount: 1499, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-c7', date: '2026-08-01', title: 'Studio Residence Lease Payment', category: 'Rent & Living', type: 'expense', amount: 22000, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-c8', date: '2026-08-01', title: 'Primary Client Retainer Deposit', category: 'Income', type: 'income', amount: 45000, isRecurring: true, isDiscretionary: false }
+    ],
     invoices: [
       {
-        id: 'INV-1042',
-        client: 'FinTech Startup Design System',
+        id: 'INV-CRIT-01',
+        client: 'FinTech Startup Design System Sprint',
         amount: 28500,
-        dueDate: '2026-09-06',
+        dueDate: '2026-09-04',
         status: 'overdue',
-        daysOverdue: 12,
-        probabilityOfDelay: 0.85,
-        expectedDelayDays: 16,
-        description: 'Complete UI/UX design token system and mobile design library'
+        daysOverdue: 14,
+        probabilityOfDelay: 0.88,
+        expectedDelayDays: 18,
+        description: 'Complete UI design token library & mobile design sprint'
       },
       {
-        id: 'INV-1045',
+        id: 'INV-CRIT-02',
         client: 'HealthTech Platform Q3 Retainer',
-        amount: 18000,
-        dueDate: '2026-09-14',
+        amount: 16000,
+        dueDate: '2026-09-18',
         status: 'pending',
         daysOverdue: 0,
-        probabilityOfDelay: 0.20,
-        expectedDelayDays: 2,
-        description: 'Monthly ongoing UX sprint retainer'
-      },
-      {
-        id: 'INV-1048',
-        client: 'E-Commerce Mobile App Audit',
-        amount: 14000,
-        dueDate: '2026-09-22',
-        status: 'pending',
-        daysOverdue: 0,
-        probabilityOfDelay: 0.35,
-        expectedDelayDays: 6,
-        description: 'Conversion rate optimization UX audit and user research report'
+        probabilityOfDelay: 0.25,
+        expectedDelayDays: 3,
+        description: 'Monthly UX Research & Design Sprint'
       }
     ],
     payments: [
       {
-        id: 'PAY-801',
-        vendor: 'Studio Workspace & Residence Rent',
+        id: 'PAY-CRIT-01',
+        vendor: 'Studio Workspace Lease',
         amount: 22000,
         dueDate: '2026-09-01',
         category: 'Rent',
@@ -193,244 +56,164 @@ export const BUSINESS_DATASETS: Record<string, FinancialDataset> = {
         notes: 'Monthly fixed lease commitment'
       },
       {
-        id: 'PAY-802',
+        id: 'PAY-CRIT-02',
         vendor: 'Subcontracted 3D Motion Specialist',
         amount: 15000,
         dueDate: '2026-09-15',
         category: 'Payroll',
         isFlexible: true,
         urgency: 'High',
-        notes: 'Can negotiate a 10-day milestone extension'
+        notes: 'Can negotiate 10-day milestone payment extension'
       },
       {
-        id: 'PAY-803',
-        vendor: 'Hardware Lease & MacBook EMI',
-        amount: 6800,
+        id: 'PAY-CRIT-03',
+        vendor: 'MacBook Pro Hardware EMI',
+        amount: 8500,
         dueDate: '2026-09-10',
         category: 'Vendor',
         isFlexible: false,
         urgency: 'High',
-        notes: 'Auto-debit from primary account'
+        notes: 'Auto-debit from primary bank'
       },
       {
-        id: 'PAY-804',
-        vendor: 'Figma, Adobe CC, Midjourney & Notion',
-        amount: 3800,
-        dueDate: '2026-09-08',
-        category: 'SaaS',
-        isFlexible: true,
-        urgency: 'Low',
-        notes: 'Software tools stack'
-      },
-      {
-        id: 'PAY-805',
+        id: 'PAY-CRIT-04',
         vendor: 'Quarterly Advance Tax Installment',
-        amount: 11500,
+        amount: 12500,
         dueDate: '2026-09-22',
         category: 'Tax',
         isFlexible: false,
         urgency: 'Critical',
-        notes: 'Statutory deadline to avoid interest charges'
+        notes: 'Statutory deadline to avoid penalty interest'
       }
     ]
   },
 
-  tech_startup: {
-    id: 'tech_startup',
-    name: 'NovaScale AI (B2B SaaS Startup)',
-    industry: 'Enterprise Software & Cloud',
-    description: 'High-growth B2B SaaS company managing 18-month runway, bi-weekly engineering payroll, and enterprise Net-45 receivables.',
-    currentBalance: 42500,
-    monthlyInflow: 58000,
-    monthlyOutflow: 64500,
+  medium_risk: {
+    id: 'medium_risk',
+    name: '🟡 Medium Risk (Moderate Runway ~24 Days)',
+    industry: 'Growth B2B SaaS',
+    description: 'Operating near safe buffer threshold: revenue covers payroll but unexpected client delays create end-of-month pressure.',
+    currentBalance: 52000,
+    monthlyInflow: 78000,
+    monthlyOutflow: 72000,
     safeBufferThreshold: 25000,
-    transactions: generateHistoricalTransactions(),
+    transactions: [
+      { id: 'tx-m1', date: '2026-08-25', title: 'Team Lunches & Client Meetings', category: 'Food & Dining', type: 'expense', amount: 2400, isRecurring: false, isDiscretionary: true },
+      { id: 'tx-m2', date: '2026-08-21', title: 'Stripe SaaS Subscriptions Batch', category: 'Income', type: 'income', amount: 35000, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-m3', date: '2026-08-15', title: 'Engineering Team Bi-Weekly Payroll', category: 'Payroll & Team', type: 'expense', amount: 28000, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-m4', date: '2026-08-08', title: 'Google Workspace & Slack Seats', category: 'Subscriptions', type: 'expense', amount: 3400, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-m5', date: '2026-08-01', title: 'Co-Working Office Space', category: 'Rent & Living', type: 'expense', amount: 14000, isRecurring: true, isDiscretionary: false }
+    ],
     invoices: [
       {
-        id: 'INV-1042',
-        client: 'Apex Global Logistics',
-        amount: 18500,
-        dueDate: '2026-09-05',
-        status: 'overdue',
-        daysOverdue: 14,
-        probabilityOfDelay: 0.85,
-        expectedDelayDays: 18,
-        description: 'Annual Enterprise Cloud Platform License Tier 1'
-      },
-      {
-        id: 'INV-1045',
-        client: 'Horizon Media Group',
-        amount: 12200,
+        id: 'INV-MED-01',
+        client: 'Enterprise Tier-1 License Payout',
+        amount: 24000,
         dueDate: '2026-09-12',
         status: 'pending',
         daysOverdue: 0,
-        probabilityOfDelay: 0.20,
-        expectedDelayDays: 2,
-        description: 'Quarterly API Volume & Custom Integration Retainer'
+        probabilityOfDelay: 0.35,
+        expectedDelayDays: 6,
+        description: 'Quarterly enterprise contract renewal'
       },
       {
-        id: 'INV-1048',
-        client: 'Vertex BioLabs',
-        amount: 9400,
-        dueDate: '2026-09-18',
-        status: 'pending',
-        daysOverdue: 0,
-        probabilityOfDelay: 0.40,
-        expectedDelayDays: 7,
-        description: 'Data Analytics Module Addon'
-      },
-      {
-        id: 'INV-1051',
-        client: 'Starlight Ventures Portfolio',
-        amount: 15000,
-        dueDate: '2026-09-26',
+        id: 'INV-MED-02',
+        client: 'Custom Integration Retainer',
+        amount: 19000,
+        dueDate: '2026-09-25',
         status: 'pending',
         daysOverdue: 0,
         probabilityOfDelay: 0.15,
         expectedDelayDays: 0,
-        description: 'Multi-Seat Enterprise Expansion Contract'
+        description: 'API integration milestone deliverable'
       }
     ],
     payments: [
       {
-        id: 'PAY-801',
-        vendor: 'Gusto Bi-Weekly Engineering Payroll',
-        amount: 24000,
+        id: 'PAY-MED-01',
+        vendor: 'Core Engineering Payroll',
+        amount: 28000,
         dueDate: '2026-09-15',
         category: 'Payroll',
         isFlexible: false,
         urgency: 'Critical',
-        notes: 'Non-negotiable core engineering & sales team compensation'
+        notes: 'Monthly engineering compensation'
       },
       {
-        id: 'PAY-802',
+        id: 'PAY-MED-02',
         vendor: 'AWS Cloud Infrastructure Cluster',
-        amount: 6200,
+        amount: 8500,
         dueDate: '2026-09-08',
         category: 'SaaS',
         isFlexible: true,
         urgency: 'Medium',
-        notes: 'Can activate 30-day AWS billing grace period'
+        notes: 'Flexible 30-day billing cycle'
       },
       {
-        id: 'PAY-803',
-        vendor: 'WeWork Office Space Lease',
-        amount: 5500,
-        dueDate: '2026-09-01',
-        category: 'Rent',
-        isFlexible: false,
-        urgency: 'High',
-        notes: 'Monthly headquarters co-working lease'
-      },
-      {
-        id: 'PAY-804',
-        vendor: 'Acquisition Growth Agency Retainer',
-        amount: 8500,
+        id: 'PAY-MED-03',
+        vendor: 'Growth Marketing Agency Retainer',
+        amount: 11000,
         dueDate: '2026-09-19',
         category: 'Vendor',
         isFlexible: true,
         urgency: 'Medium',
-        notes: 'Paid marketing agency - can be paused or deferred'
-      },
-      {
-        id: 'PAY-805',
-        vendor: 'Quarterly State Tax Escrow',
-        amount: 9800,
-        dueDate: '2026-09-22',
-        category: 'Tax',
-        isFlexible: false,
-        urgency: 'Critical',
-        notes: 'Statutory deadline to avoid penalties'
+        notes: 'Paid marketing agency'
       }
     ]
   },
 
-  ecommerce: {
-    id: 'ecommerce',
-    name: 'Lumina Goods (E-Commerce Direct-to-Consumer)',
-    industry: 'Consumer Goods & Retail',
-    description: 'Direct-to-consumer lifestyle brand balancing high manufacturing inventory lead times, Meta ad spending, and merchant processor settlement cycles.',
-    currentBalance: 68000,
-    monthlyInflow: 112000,
-    monthlyOutflow: 118000,
-    safeBufferThreshold: 40000,
-    transactions: generateHistoricalTransactions(),
+  healthy_safe: {
+    id: 'healthy_safe',
+    name: '🟢 Healthy & Safe (Strong Cash Buffer)',
+    industry: 'Profitable E-Commerce & Retail',
+    description: 'Robust liquidity resilience: >3.5x buffer coverage, strong recurring monthly surplus, and prompt customer settlement cycles.',
+    currentBalance: 98000,
+    monthlyInflow: 135000,
+    monthlyOutflow: 88000,
+    safeBufferThreshold: 20000,
+    transactions: [
+      { id: 'tx-s1', date: '2026-08-25', title: 'Shopify Merchant Settlements Batch', category: 'Income', type: 'income', amount: 48000, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-s2', date: '2026-08-20', title: 'Amazon Marketplace Payout', category: 'Income', type: 'income', amount: 52000, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-s3', date: '2026-08-15', title: 'Warehouse Fulfillment Logistics', category: 'Utilities', type: 'expense', amount: 16000, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-s4', date: '2026-08-10', title: 'Meta & TikTok Performance Ads', category: 'Shopping', type: 'expense', amount: 22000, isRecurring: true, isDiscretionary: true },
+      { id: 'tx-s5', date: '2026-08-01', title: 'Staff Payroll & Operations', category: 'Payroll & Team', type: 'expense', amount: 26000, isRecurring: true, isDiscretionary: false }
+    ],
     invoices: [
       {
-        id: 'INV-EC-201',
-        client: 'Shopify Merchant Payouts (Weekly)',
-        amount: 42000,
-        dueDate: '2026-09-04',
+        id: 'INV-SAFE-01',
+        client: 'Wholesale Retailer Purchase Order',
+        amount: 35000,
+        dueDate: '2026-09-08',
         status: 'pending',
         daysOverdue: 0,
         probabilityOfDelay: 0.05,
-        expectedDelayDays: 1,
-        description: 'Direct consumer sales batch deposit'
-      },
-      {
-        id: 'INV-EC-202',
-        client: 'Amazon Seller Central Settlement',
-        amount: 38000,
-        dueDate: '2026-09-14',
-        status: 'pending',
-        daysOverdue: 0,
-        probabilityOfDelay: 0.10,
-        expectedDelayDays: 2,
-        description: 'Bi-weekly Amazon marketplace disbursement'
-      },
-      {
-        id: 'INV-EC-203',
-        client: 'Nordstrom Wholesale B2B Purchase Order',
-        amount: 26500,
-        dueDate: '2026-09-02',
-        status: 'overdue',
-        daysOverdue: 9,
-        probabilityOfDelay: 0.65,
-        expectedDelayDays: 14,
-        description: 'Autumn catalog seasonal retail order'
+        expectedDelayDays: 0,
+        description: 'Autumn wholesale shipment deposit'
       }
     ],
     payments: [
       {
-        id: 'PAY-EC-101',
-        vendor: 'Overseas Factory Bulk Production (50% Deposit)',
-        amount: 52000,
+        id: 'PAY-SAFE-01',
+        vendor: 'Inventory Factory Production Batch',
+        amount: 32000,
         dueDate: '2026-09-16',
         category: 'Inventory',
         isFlexible: true,
-        urgency: 'High',
-        notes: 'Holiday season inventory batch - can negotiate 14-day bill of lading hold'
-      },
-      {
-        id: 'PAY-EC-102',
-        vendor: 'Meta & TikTok Performance Ad Spend',
-        amount: 28000,
-        dueDate: '2026-09-10',
-        category: 'Vendor',
-        isFlexible: true,
         urgency: 'Medium',
-        notes: 'Direct ad campaign charges; can adjust daily budget caps'
+        notes: 'Seasonal replenishment batch'
       },
       {
-        id: 'PAY-EC-103',
-        vendor: '3PL Fulfillment & Warehousing Depot',
-        amount: 16500,
-        dueDate: '2026-09-20',
-        category: 'Vendor',
-        isFlexible: false,
-        urgency: 'High',
-        notes: 'Shipping & warehouse operations'
-      },
-      {
-        id: 'PAY-EC-104',
-        vendor: 'Core Operations & Support Payroll',
-        amount: 14000,
+        id: 'PAY-SAFE-02',
+        vendor: 'Staff Operations Payroll',
+        amount: 26000,
         dueDate: '2026-09-15',
         category: 'Payroll',
         isFlexible: false,
         urgency: 'Critical',
-        notes: 'Full-time support and operations staff'
+        notes: 'Full-time support operations'
       }
     ]
   }
 };
+
+export const BUSINESS_DATASETS = HACKATHON_SCENARIOS;

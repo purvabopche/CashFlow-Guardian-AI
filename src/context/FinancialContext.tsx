@@ -71,6 +71,8 @@ interface FinancialContextType {
 
 const DEFAULT_SCENARIO_PARAMS: ScenarioParams = {
   extraSpendingThisWeek: 0,
+  emergencyFundingAmount: 0,
+  newRecurringExpenseAmount: 0,
   customerPaymentDelayDays: 0,
   foodExpenseReductionPercent: 0,
   dailyDiscretionaryTrim: 0,
@@ -83,7 +85,7 @@ const FinancialContext = createContext<FinancialContextType | undefined>(undefin
 
 export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [activePage, setActivePage] = useState<ActivePage>('dashboard');
-  const [currentDatasetKey, setCurrentDatasetKey] = useState<string>('freelancer_pro');
+  const [currentDatasetKey, setCurrentDatasetKey] = useState<string>('critical_shortage');
   const [datasets, setDatasets] = useState<Record<string, FinancialDataset>>(BUSINESS_DATASETS);
   const [currency, setCurrency] = useState<CurrencyCode>('INR');
   const [forecastRangeDays, setForecastRangeDays] = useState<number>(30);
@@ -98,7 +100,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [activeInvoiceForModal, setActiveInvoiceForModal] = useState<Invoice | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  const currentDataset = datasets[currentDatasetKey] || datasets.freelancer_pro;
+  const currentDataset = datasets[currentDatasetKey] || datasets.critical_shortage;
 
   const [scenarioParams, setScenarioParams] = useState<ScenarioParams>({
     ...DEFAULT_SCENARIO_PARAMS,

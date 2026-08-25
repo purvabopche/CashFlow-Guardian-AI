@@ -18,7 +18,8 @@ import {
   DollarSign,
   Receipt,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  PlayCircle
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -41,6 +42,9 @@ export const DashboardPage: React.FC = () => {
     forecast,
     riskPrediction,
     dataset,
+    currentDatasetKey,
+    setDatasetKey,
+    allDatasets,
     formatCurrency,
     setActivePage,
     setIsAddModalOpen,
@@ -57,8 +61,8 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Page Header & Quick Demo Scenario Selector */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -74,22 +78,24 @@ export const DashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setActivePage('simulator')}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-all"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-            <span>Simulate Scenarios</span>
-          </button>
-
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-xs font-bold shadow-sm shadow-emerald-600/20 transition-all active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Transaction</span>
-          </button>
+        {/* ⚡ Hackathon Live Demo Scenario Switcher */}
+        <div className="flex flex-wrap items-center gap-2 bg-slate-900 text-white p-2 rounded-2xl shadow-md border border-slate-800">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1 pl-2 pr-1">
+            <Zap className="w-3.5 h-3.5" /> Demo Mode:
+          </span>
+          {Object.values(allDatasets).map((ds) => (
+            <button
+              key={ds.id}
+              onClick={() => setDatasetKey(ds.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                currentDatasetKey === ds.id
+                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+              }`}
+            >
+              {ds.id === 'critical_shortage' ? '🔴 Critical Shortage' : ds.id === 'medium_risk' ? '🟡 Medium Risk' : '🟢 Healthy Safe'}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -97,38 +103,76 @@ export const DashboardPage: React.FC = () => {
       <ModelStatusBanner />
 
       {/* Prominent Shortage Alert Banner */}
-      <div className="rounded-2xl border border-amber-300/80 bg-gradient-to-r from-amber-50 via-amber-50/60 to-rose-50/50 p-6 shadow-sm ring-1 ring-amber-400/20">
+      <div
+        className={`rounded-2xl border p-6 shadow-sm transition-all ${
+          riskPrediction.riskProbability >= 65
+            ? 'border-rose-300 bg-gradient-to-r from-rose-50 via-rose-50/70 to-amber-50/50 ring-1 ring-rose-400/20'
+            : riskPrediction.riskProbability >= 35
+            ? 'border-amber-300 bg-gradient-to-r from-amber-50 via-amber-50/70 to-white ring-1 ring-amber-400/20'
+            : 'border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50/40 to-white ring-1 ring-emerald-400/20'
+        }`}
+      >
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-md shadow-amber-500/20">
-              <AlertTriangle className="w-6 h-6" />
+            <div
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md ${
+                riskPrediction.riskProbability >= 65
+                  ? 'bg-rose-600 shadow-rose-600/20'
+                  : riskPrediction.riskProbability >= 35
+                  ? 'bg-amber-500 shadow-amber-500/20'
+                  : 'bg-emerald-600 shadow-emerald-600/20'
+              }`}
+            >
+              {riskPrediction.riskProbability >= 35 ? (
+                <AlertTriangle className="w-6 h-6" />
+              ) : (
+                <CheckCircle2 className="w-6 h-6" />
+              )}
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h3 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                  <span>⚠ Cash Shortage Predicted</span>
+                  <span>
+                    {riskPrediction.riskProbability >= 65
+                      ? '⚠ Critical Cash Shortage Predicted'
+                      : riskPrediction.riskProbability >= 35
+                      ? '⚠ Moderate Liquidity Pressure Detected'
+                      : '✓ Cash Flow Health Safe & Stable'}
+                  </span>
                 </h3>
                 <StatusBadge level={riskPrediction.riskLevel} size="sm" />
-                <span className="text-xs font-mono font-bold text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded">
+                <span
+                  className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                    riskPrediction.riskProbability >= 65
+                      ? 'bg-rose-200 text-rose-900'
+                      : riskPrediction.riskProbability >= 35
+                      ? 'bg-amber-200 text-amber-900'
+                      : 'bg-emerald-200 text-emerald-900'
+                  }`}
+                >
                   {riskPrediction.riskProbability}% Probability
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-700 leading-relaxed max-w-3xl">
-                Based on your current spending pattern and upcoming payments, your balance may drop below your safe threshold in <strong className="font-bold text-slate-900">12 days</strong> ({summary.dangerDate || 'around Mid-Month'}).
+                {riskPrediction.riskProbability >= 35
+                  ? `Based on your current spending pattern and upcoming payments, your balance may drop below your ${formatCurrency(summary.safeBufferThreshold)} safety buffer in ${summary.dangerDaysFromNow} days (${summary.dangerDate || 'Mid-Month'}).`
+                  : `Your projected 30-day balance remains comfortably above your ${formatCurrency(summary.safeBufferThreshold)} safety buffer with a safe runway of ~${summary.runwayDays} days.`}
               </p>
               
-              <div className="pt-2 flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-bold text-slate-900">Suggested actions:</span>
-                <span className="rounded-md bg-white border border-amber-200 px-2.5 py-1 text-slate-700 font-medium">
-                  • Reduce discretionary spending
-                </span>
-                <span className="rounded-md bg-white border border-amber-200 px-2.5 py-1 text-slate-700 font-medium">
-                  • Delay non-essential purchases
-                </span>
-                <span className="rounded-md bg-white border border-amber-200 px-2.5 py-1 text-slate-700 font-medium">
-                  • Maintain a minimum balance buffer
-                </span>
-              </div>
+              {riskPrediction.riskProbability >= 35 && (
+                <div className="pt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-bold text-slate-900">Suggested actions:</span>
+                  <span className="rounded-md bg-white border border-slate-200 px-2.5 py-1 text-slate-700 font-medium">
+                    • Reduce discretionary spending by ₹300/day
+                  </span>
+                  <span className="rounded-md bg-white border border-slate-200 px-2.5 py-1 text-slate-700 font-medium">
+                    • Delay flexible vendor payments by 5–10 days
+                  </span>
+                  <span className="rounded-md bg-white border border-slate-200 px-2.5 py-1 text-slate-700 font-medium">
+                    • Accelerate uncollected overdue client invoices
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -138,7 +182,7 @@ export const DashboardPage: React.FC = () => {
               className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 text-xs font-bold shadow-md transition-all active:scale-95"
             >
               <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span>Resolve in AI Insights</span>
+              <span>View Prescriptions in AI Insights</span>
             </button>
           </div>
         </div>
@@ -154,13 +198,13 @@ export const DashboardPage: React.FC = () => {
           icon={Wallet}
           iconBg="bg-slate-100"
           iconColor="text-slate-800"
-          tooltip="Liquid cash available across checking and linked savings accounts."
+          tooltip="Liquid cash available across active bank accounts."
         />
 
         <MetricCard
-          title="Monthly Income"
+          title="Monthly Inflow"
           value={formatCurrency(summary.monthlyInflow)}
-          subValue="Client retainers & recurring sales"
+          subValue="Client retainers & sales"
           change={{ value: summary.changeVsLastMonth.inflow, isPositiveGood: true }}
           icon={ArrowDownLeft}
           iconBg="bg-emerald-50"
@@ -169,14 +213,14 @@ export const DashboardPage: React.FC = () => {
         />
 
         <MetricCard
-          title="Monthly Expenses"
+          title="Monthly Outflow"
           value={formatCurrency(summary.monthlyOutflow)}
           subValue="Rent, payroll & operating burn"
           change={{ value: summary.changeVsLastMonth.outflow, isPositiveGood: false }}
           icon={ArrowUpRight}
           iconBg="bg-rose-50"
           iconColor="text-rose-600"
-          tooltip="Total scheduled operating expenses, rent, SaaS subscriptions, and living costs."
+          tooltip="Total scheduled operating expenses, rent, SaaS subscriptions, and bills."
         />
 
         <MetricCard
@@ -213,7 +257,7 @@ export const DashboardPage: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Projected daily balance against your configured safety threshold. The red shaded zone highlights forecasted deficit danger.
+              Projected daily closing balance against your configured safety threshold.
             </p>
           </div>
 

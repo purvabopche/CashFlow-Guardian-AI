@@ -15,7 +15,9 @@ import {
   Utensils,
   ShoppingBag,
   Clock,
-  ArrowRight
+  ArrowRight,
+  PlusCircle,
+  PiggyBank
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -45,20 +47,23 @@ export const ScenarioSimulatorPage: React.FC = () => {
   // Preset Scenario Handlers
   const applyPreset = (
     extraSpend: number,
+    emergency: number,
+    newRecurring: number,
     delay: number,
     foodReduction: number,
     dailyTrim: number,
-    revPct: number = 0,
-    vendorShift: number = 0
+    bufferAmount?: number
   ) => {
     setScenarioParams({
       extraSpendingThisWeek: extraSpend,
+      emergencyFundingAmount: emergency,
+      newRecurringExpenseAmount: newRecurring,
       customerPaymentDelayDays: delay,
       foodExpenseReductionPercent: foodReduction,
       dailyDiscretionaryTrim: dailyTrim,
-      monthlyRevenueChangePercent: revPct,
-      vendorPaymentShiftDays: vendorShift,
-      safeBufferAmount: summary.safeBufferThreshold
+      monthlyRevenueChangePercent: 0,
+      vendorPaymentShiftDays: 0,
+      safeBufferAmount: bufferAmount ?? summary.safeBufferThreshold
     });
   };
 
@@ -78,7 +83,7 @@ export const ScenarioSimulatorPage: React.FC = () => {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Simulate unexpected expenses, payment delays, or discretionary spending cuts to see live impact on cash runway and safety score.
+            Simulate emergency cash injections, delayed customer receivables (7/14/30d), discretionary trims, or new recurring tools.
           </p>
         </div>
 
@@ -98,47 +103,47 @@ export const ScenarioSimulatorPage: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <button
-            onClick={() => applyPreset(5000, 0, 0, 0)}
-            className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-rose-50/60 hover:border-rose-300 text-left transition-all group"
+            onClick={() => applyPreset(0, 25000, 0, 0, 0, 0)}
+            className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-emerald-50/60 hover:border-emerald-300 text-left transition-all group"
           >
-            <div className="font-bold text-xs text-slate-900 group-hover:text-rose-900 flex items-center gap-1.5">
-              <ShoppingBag className="w-3.5 h-3.5 text-rose-600" />
-              <span>Spend ₹5,000 more this week?</span>
+            <div className="font-bold text-xs text-slate-900 group-hover:text-emerald-900 flex items-center gap-1.5">
+              <PiggyBank className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Add ₹25,000 Emergency Funding?</span>
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">Simulate unbudgeted equipment/shopping</div>
+            <div className="text-[11px] text-slate-500 mt-1">Instant liquidity bridge & risk drops to 12%</div>
           </button>
 
           <button
-            onClick={() => applyPreset(0, 5, 0, 0)}
+            onClick={() => applyPreset(0, 0, 0, 14, 0, 0)}
             className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-amber-50/60 hover:border-amber-300 text-left transition-all group"
           >
             <div className="font-bold text-xs text-slate-900 group-hover:text-amber-900 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-amber-600" />
-              <span>Salary / Invoice delayed by 5 days?</span>
+              <span>Invoice delayed by 14 days?</span>
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">Test timing deficit on mid-month bills</div>
+            <div className="text-[11px] text-slate-500 mt-1">Simulate receivables collection lag</div>
           </button>
 
           <button
-            onClick={() => applyPreset(0, 0, 20, 0)}
-            className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-emerald-50/60 hover:border-emerald-300 text-left transition-all group"
+            onClick={() => applyPreset(0, 0, 0, 0, 25, 0)}
+            className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-teal-50/60 hover:border-teal-300 text-left transition-all group"
           >
-            <div className="font-bold text-xs text-slate-900 group-hover:text-emerald-900 flex items-center gap-1.5">
-              <Utensils className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Reduce food & dining by 20%?</span>
+            <div className="font-bold text-xs text-slate-900 group-hover:text-teal-900 flex items-center gap-1.5">
+              <Utensils className="w-3.5 h-3.5 text-teal-600" />
+              <span>Reduce food & dining by 25%?</span>
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">Cut delivery & weekend dining spend</div>
+            <div className="text-[11px] text-slate-500 mt-1">Trim delivery & non-essential dining</div>
           </button>
 
           <button
-            onClick={() => applyPreset(0, 0, 0, 300)}
+            onClick={() => applyPreset(0, 0, 4500, 0, 0, 0)}
             className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-purple-50/60 hover:border-purple-300 text-left transition-all group"
           >
             <div className="font-bold text-xs text-slate-900 group-hover:text-purple-900 flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-purple-600" />
-              <span>Trim ₹300 discretionary / day?</span>
+              <PlusCircle className="w-3.5 h-3.5 text-purple-600" />
+              <span>Add ₹4,500/mo New Tool?</span>
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">Save ₹9,000/mo & boost safety score</div>
+            <div className="text-[11px] text-slate-500 mt-1">Test impact of new recurring commitment</div>
           </button>
         </div>
       </div>
@@ -172,7 +177,7 @@ export const ScenarioSimulatorPage: React.FC = () => {
                       : 'bg-rose-100 text-rose-800'
                   }`}
                 >
-                  {isSimulatedBetter ? 'Cushion Protected' : 'Increased Shortage Risk'}
+                  {isSimulatedBetter ? 'Liquidity Protected' : 'Increased Shortage Risk'}
                 </span>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed">{scenarioResult.summaryNote}</p>
@@ -233,50 +238,68 @@ export const ScenarioSimulatorPage: React.FC = () => {
         <div className="lg:col-span-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
           <div className="pb-3 border-b border-slate-100">
             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-              Simulation Parameters
+              Interactive Stress Parameters
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Drag sliders to test customized financial conditions.
+              Adjust variables to test financial resilience in real-time.
             </p>
           </div>
 
           <div className="space-y-4 text-xs">
-            {/* Slider 1: Extra Spending This Week */}
+            {/* Control 1: Emergency Capital Injection */}
             <div className="space-y-1.5">
               <div className="flex justify-between font-semibold">
-                <span className="text-slate-700">Extra Expense This Week:</span>
-                <span className="text-rose-600 font-bold font-mono">
-                  +{formatCurrency(scenarioParams.extraSpendingThisWeek)}
+                <span className="text-slate-700">Add Emergency Funding:</span>
+                <span className="text-emerald-600 font-bold font-mono">
+                  +{formatCurrency(scenarioParams.emergencyFundingAmount)}
                 </span>
               </div>
               <input
                 type="range"
                 min="0"
-                max="25000"
-                step="500"
-                value={scenarioParams.extraSpendingThisWeek}
+                max="100000"
+                step="5000"
+                value={scenarioParams.emergencyFundingAmount}
                 onChange={(e) =>
                   setScenarioParams((prev) => ({
                     ...prev,
-                    extraSpendingThisWeek: parseFloat(e.target.value)
+                    emergencyFundingAmount: parseFloat(e.target.value)
                   }))
                 }
-                className="w-full accent-rose-600 cursor-pointer"
+                className="w-full accent-emerald-600 cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-slate-400">
                 <span>₹0</span>
-                <span>₹10,000</span>
-                <span>₹25,000</span>
+                <span>₹50,000</span>
+                <span>₹1,00,000</span>
               </div>
             </div>
 
-            {/* Slider 2: Salary / Income Delay */}
+            {/* Control 2: Delay Invoice Payment by 7, 14, 30 days */}
             <div className="space-y-1.5">
               <div className="flex justify-between font-semibold">
-                <span className="text-slate-700">Income / Salary Delay:</span>
+                <span className="text-slate-700">Delay Invoice Collection:</span>
                 <span className="text-amber-600 font-bold font-mono">
                   {scenarioParams.customerPaymentDelayDays} Days Lag
                 </span>
+              </div>
+              <div className="grid grid-cols-4 gap-1 pt-0.5 pb-1">
+                {[0, 7, 14, 30].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() =>
+                      setScenarioParams((prev) => ({ ...prev, customerPaymentDelayDays: d }))
+                    }
+                    className={`py-1 rounded-lg text-[11px] font-bold border transition-all ${
+                      scenarioParams.customerPaymentDelayDays === d
+                        ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {d === 0 ? 'On-Time' : `+${d} Days`}
+                  </button>
+                ))}
               </div>
               <input
                 type="range"
@@ -292,18 +315,71 @@ export const ScenarioSimulatorPage: React.FC = () => {
                 }
                 className="w-full accent-amber-600 cursor-pointer"
               />
+            </div>
+
+            {/* Control 3: Safe Buffer Threshold Target */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between font-semibold">
+                <span className="text-slate-700">Minimum Safety Cushion:</span>
+                <span className="text-blue-600 font-bold font-mono">
+                  {formatCurrency(scenarioParams.safeBufferAmount)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="5000"
+                max="50000"
+                step="2500"
+                value={scenarioParams.safeBufferAmount}
+                onChange={(e) =>
+                  setScenarioParams((prev) => ({
+                    ...prev,
+                    safeBufferAmount: parseFloat(e.target.value)
+                  }))
+                }
+                className="w-full accent-blue-600 cursor-pointer"
+              />
               <div className="flex justify-between text-[10px] text-slate-400">
-                <span>0d (On Time)</span>
-                <span>15d Lag</span>
-                <span>30d Max Delay</span>
+                <span>₹5,000</span>
+                <span>₹25,000</span>
+                <span>₹50,000</span>
               </div>
             </div>
 
-            {/* Slider 3: Food & Dining Expense Cut % */}
+            {/* Control 4: Add New Recurring Expense / Tool */}
             <div className="space-y-1.5">
               <div className="flex justify-between font-semibold">
-                <span className="text-slate-700">Food & Dining Cut (%):</span>
-                <span className="text-emerald-600 font-bold font-mono">
+                <span className="text-slate-700">Add New Recurring Expense:</span>
+                <span className="text-purple-600 font-bold font-mono">
+                  +{formatCurrency(scenarioParams.newRecurringExpenseAmount)}/mo
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="20000"
+                step="1000"
+                value={scenarioParams.newRecurringExpenseAmount}
+                onChange={(e) =>
+                  setScenarioParams((prev) => ({
+                    ...prev,
+                    newRecurringExpenseAmount: parseFloat(e.target.value)
+                  }))
+                }
+                className="w-full accent-purple-600 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>₹0/mo</span>
+                <span>₹10,000/mo</span>
+                <span>₹20,000/mo</span>
+              </div>
+            </div>
+
+            {/* Control 5: Reduce Food & Dining Expense Cut % */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between font-semibold">
+                <span className="text-slate-700">Reduce Food & Dining (%):</span>
+                <span className="text-teal-600 font-bold font-mono">
                   -{scenarioParams.foodExpenseReductionPercent}%
                 </span>
               </div>
@@ -319,42 +395,8 @@ export const ScenarioSimulatorPage: React.FC = () => {
                     foodExpenseReductionPercent: parseInt(e.target.value)
                   }))
                 }
-                className="w-full accent-emerald-600 cursor-pointer"
+                className="w-full accent-teal-600 cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] text-slate-400">
-                <span>0% (Normal)</span>
-                <span>-25% Trim</span>
-                <span>-50% Strict Cut</span>
-              </div>
-            </div>
-
-            {/* Slider 4: Daily Discretionary Trim */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between font-semibold">
-                <span className="text-slate-700">Daily Discretionary Trim:</span>
-                <span className="text-blue-600 font-bold font-mono">
-                  -{formatCurrency(scenarioParams.dailyDiscretionaryTrim)}/day
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1000"
-                step="50"
-                value={scenarioParams.dailyDiscretionaryTrim}
-                onChange={(e) =>
-                  setScenarioParams((prev) => ({
-                    ...prev,
-                    dailyDiscretionaryTrim: parseFloat(e.target.value)
-                  }))
-                }
-                className="w-full accent-blue-600 cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-slate-400">
-                <span>₹0/day</span>
-                <span>₹500/day</span>
-                <span>₹1,000/day</span>
-              </div>
             </div>
           </div>
         </div>
@@ -453,7 +495,7 @@ export const ScenarioSimulatorPage: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Dynamic Monte Carlo Engine</span>
+            <span>Dynamic Liquidity Engine</span>
             <span>Real-time Financial Recalculation</span>
           </div>
         </div>

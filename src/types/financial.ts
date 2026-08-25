@@ -73,6 +73,7 @@ export interface CashFlowSummary {
   netBurnRate: number;
   dangerDayCount: number;
   dangerDate: string | null;
+  dangerDaysFromNow: number;
   changeVsLastMonth: {
     balance: number;
     inflow: number;
@@ -125,6 +126,7 @@ export interface ExplainableFactor {
   description: string;
   category: 'Receivables' | 'Outflow' | 'Liquidity' | 'Revenue' | 'Discretionary' | 'Macro';
   shapValue: number;
+  isRemediable?: boolean;
 }
 
 export interface RiskPrediction {
@@ -147,7 +149,9 @@ export interface RiskPrediction {
 
 export interface ScenarioParams {
   extraSpendingThisWeek: number; // e.g. ₹5,000 / $500
-  customerPaymentDelayDays: number; // e.g. 5 days salary/invoice delay
+  emergencyFundingAmount: number; // e.g. +₹10,000 emergency capital injection
+  newRecurringExpenseAmount: number; // e.g. +₹3,000/mo new tool
+  customerPaymentDelayDays: number; // e.g. 5, 7, 14, 30 days
   foodExpenseReductionPercent: number; // e.g. 20%
   dailyDiscretionaryTrim: number; // e.g. ₹300/day
   monthlyRevenueChangePercent: number; // -50% to +50%
@@ -187,6 +191,10 @@ export interface ActionInsight {
   recommendedAction: string;
   status: 'open' | 'applied' | 'dismissed';
   actionType: 'invoice_reminder' | 'reschedule_payment' | 'cut_expense' | 'credit_line' | 'cut_discretionary' | 'early_discount';
+  riskReductionEstimate?: {
+    fromRisk: number;
+    toRisk: number;
+  };
   templateData?: {
     client?: string;
     amount?: number;
