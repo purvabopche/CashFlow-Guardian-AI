@@ -29,11 +29,11 @@ app.include_router(api_router)
 def root():
     return {
         "app": "CashFlow Guardian AI",
-        "version": "2.1.0",
+        "version": "2.3.0",
         "docs_url": "/docs",
         "redoc_url": "/redoc",
         "status": "online",
-        "ml_engine": "Gradient Boosted Cash Survival Ensemble"
+        "ml_engine": "Random Forest Cash Shortage Classifier & Gradient Boosting Regressors"
     }
 
 if __name__ == "__main__":
