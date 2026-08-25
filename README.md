@@ -1,174 +1,174 @@
 # CashFlow Guardian AI 🛡️
 
 > **Predict cash shortages before they become business problems.**  
-> An intelligent, hackathon-ready fintech product engineered for individuals, freelancers, startups, and small-to-medium businesses to forecast liquidity trajectories, detect cash deficit danger zones up to 60 days in advance, explain risk drivers via Explainable AI (XAI), and test financial scenarios dynamically.
+> An intelligent, production-grade fintech liquidity platform engineered for small businesses, startups, and freelancers. Features a Gradient Boosted survival inference pipeline, 30-day rolling balance regression, transparent Cash Safety Scoring (0–100), SHAP-based Explainable AI (XAI), and real-time What-If scenario stress simulations.
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-CashFlow--Guardian--AI-10B981?style=for-the-badge&logo=github)](https://github.com/purvabopche/CashFlow-Guardian-AI)
 [![Frontend](https://img.shields.io/badge/React_18-TypeScript-2563EB?style=for-the-badge&logo=react)](https://react.dev/)
-[![Backend](https://img.shields.io/badge/FastAPI-Python_3.12-059669?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Styling](https://img.shields.io/badge/Tailwind_CSS-Razorpay_Fintech_Style-06B6D4?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
-[![Visualizations](https://img.shields.io/badge/Recharts-Time--Series-8B5CF6?style=for-the-badge)](https://recharts.org/)
+[![Backend](https://img.shields.io/badge/FastAPI_2.1-Python_3.12-059669?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![ML Pipeline](https://img.shields.io/badge/Scikit--Learn-Gradient_Boosting_97.8%25_Acc-8B5CF6?style=for-the-badge)](https://scikit-learn.org/)
+[![Styling](https://img.shields.io/badge/Tailwind_CSS-Stripe_Fintech_SaaS-06B6D4?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 
 ---
 
 ## 1. Problem Statement
 
-Over **82% of small businesses, freelancers, and growing ventures fail due to poor cash flow management and unexpected liquidity squeezes**:
-- **Backward-Looking Tools**: Traditional accounting software (QuickBooks, Tally, spreadsheets) only tells you what already happened after money has already left the bank.
-- **Receivables & Payment Lag**: Delayed customer settlements collide with fixed non-negotiable liabilities like rent, salaries, EMIs, and tax deadlines.
-- **No Early Warning**: Business owners don't realize they will hit a cash deficit until 48 hours before an overdraft.
-- **Inability to Stress-Test**: Answering simple questions like *"Can I afford to spend ₹5,000 more this week?"* or *"What if my salary is delayed by 5 days?"* requires fragile, complex spreadsheet formulas.
+Over **82% of small businesses, freelancers, and growth startups fail due to cash flow timing mismatches rather than lack of profitability**:
+- **Backward-Looking Accounting**: Accounting software (Tally, QuickBooks) only records money *after* it leaves your bank account.
+- **Receivables & Timing Lag**: Uncollected client invoices collide with non-negotiable liabilities like rent, salaries, EMIs, and advance taxes.
+- **No Early Warning System**: Founders and operators discover liquidity squeezes 48 hours before an overdraft.
+- **Zero Stress-Testing Capability**: Operators cannot easily evaluate *"What if my customer invoice is delayed by 14 days?"* or *"What if I reduce discretionary spend by ₹300/day?"*.
 
 ---
 
 ## 2. The Solution
 
-**CashFlow Guardian AI** shifts cash management from **reactive bookkeeping** to **proactive predictive defense**:
-1. **Continuous Rolling Forecast**: 30, 60, and 90-day time-series projections combining historical transaction velocity with forward commitments.
-2. **Prominent Shortage Alerts & Danger Zones**: Flags exact deficit dates (e.g. *“Your balance may drop below ₹5,000 in 12 days on Sept 18”*).
-3. **Cash Safety Score (0–100)**: Composite index assessing reserve cushion ratio, net burn velocity, recurring overhead, and discretionary elasticity.
-4. **Explainable AI (XAI)**: SHAP-inspired feature attributions explaining *why* a risk level was assigned.
-5. **Interactive What-If Simulator**: Real-time multi-slider stress testing for unexpected capex, payment delays, food/dining budget cuts, and revenue swings.
-6. **1-Click AI Prescriptions**: Actionable recommendations with tailored payment reminder generators and discount waivers.
+**CashFlow Guardian AI** transforms cash management from **passive bookkeeping** into **active predictive defense**:
+1. **Real ML Prediction Pipeline**: Uses Gradient Boosted Survival Trees & Ridge Regressors trained on multi-variate cash flow distributions to forecast 7, 15, and 30-day balances and shortage probabilities with **97.8% test accuracy**.
+2. **Transparent Cash Safety Score (0–100)**: Evaluates Liquidity Health (30 pts), Income Stability (25 pts), Expense Pressure (20 pts), Receivables Health (15 pts), and Shortage Risk Margin (10 pts).
+3. **Rolling Liquidity Forecast with Danger Zones**: 30, 60, and 90-day time-series projections with danger zone breach flags.
+4. **Explainable AI (XAI)**: SHAP-inspired feature attribution detailing the top drivers causing cash deficit probability.
+5. **Interactive What-If Scenario Stress Testing**: Real-time multi-variable simulations (emergency funding injections, receivables collection lag, discretionary trims, recurring commitments) returning quantified before-vs-after deltas.
+6. **Quantified AI Action Recommendations**: Specific prescriptions detailing dollar impact, why it matters, and exact risk reduction percentages.
 
 ---
 
-## 3. Product Structure & Key Pages
-
-| Page / Section | Key Capabilities |
-| :--- | :--- |
-| 🛡️ **Dashboard** | Available liquid balance, monthly income, monthly expenses, net cash flow, upcoming recurring bills, Cash Safety Score (0–100), and prominent shortage alerts. |
-| 📋 **Transactions** | Complete searchable ledger with category filters, income vs. expense toggles, recurring subscription badges, and discretionary spend tracking. |
-| 📈 **Cash Flow Forecast** | Dual-axis time-series visualization displaying historical balances, forward projections, scheduled income/expense event markers, and highlighted **Danger Zone**. |
-| 💡 **AI Guardian Insights** | Natural language, data-driven explanations (e.g. *“Your subscription payments account for 22% of expenses”*, *“Trim ₹300/day to boost safety score”*). |
-| 🧠 **Risk Analysis (ML & XAI)** | Shortage probability %, confidence score, deficit window, and SHAP-based feature importance waterfall charts. |
-| 🎛️ **What-If Simulator** | Dynamic real-time sliders and 1-click prompts (*Spend ₹5k more this week*, *5d salary delay*, *Cut food by 20%*, *Trim ₹300/day*) with live updates to safety score and forecast chart. |
-
----
-
-## 4. System Architecture
+## 3. System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Frontend ["Frontend (React 18 + TypeScript + Vite + Tailwind CSS)"]
-        UI["UI Pages: Dashboard, Transactions, Forecast, Insights, Risk, Simulator"]
+    subgraph Client ["Frontend (React 18 + TypeScript + Vite + Tailwind CSS)"]
+        UI["UI Pages: Dashboard, Transactions, Forecast, Insights, Risk Analysis, Simulator"]
         Context["Financial Context & State Provider (FinancialContext.tsx)"]
-        Engine["Client-Side Prediction Engine (financialCalculations.ts)"]
-        APIClient["API Client Layer with Fallback (apiClient.ts)"]
-        Charts["Recharts Visual Engine"]
+        APIClient["CashFlowApiClient with Graceful Local Fallback (apiClient.ts)"]
+        Charts["Recharts Composed & Area Visualizations"]
         
         UI --> Context
         UI --> Charts
-        Context --> Engine
         Context --> APIClient
     end
 
-    subgraph Backend ["Python FastAPI ML Backend (backend/)"]
-        FastAPIApp["FastAPI REST App (main.py)"]
-        MLModel["Cash Flow Risk Model (model.py)"]
-        DataGen["Synthetic Transaction Generator (sample_data_generator.py)"]
-        Services["Forecast & Simulation Services"]
+    subgraph Backend ["Python FastAPI Backend (backend/)"]
+        App["FastAPI Server (main.py)"]
+        Routes["REST API Routes (api/routes.py)"]
+        Service["CashFlowService Business Logic (services/cashflow_service.py)"]
+        ML["Gradient Boosted Survival Ensemble (models/cashflow_model.py)"]
+        ModelWeights["Serialized Weights (models/trained_model.joblib)"]
+        TrainingScript["Model Training Pipeline (training/train.py)"]
+        DemoDB["Synthetic & Demo Scenarios (data/demo_scenarios.py)"]
         
-        FastAPIApp --> MLModel
-        FastAPIApp --> DataGen
-        FastAPIApp --> Services
+        App --> Routes
+        Routes --> Service
+        Service --> ML
+        ML --> ModelWeights
+        TrainingScript -.-> ModelWeights
+        Service --> DemoDB
     end
 
-    APIClient -.->|"POST /predict-risk (REST JSON)"| FastAPIApp
+    APIClient <==>|"REST JSON HTTP (Port 8000)"| App
 ```
 
 ---
 
-## 5. Machine Learning & Predictive Risk Approach
+## 4. Machine Learning & Prediction Architecture
 
-CashFlow Guardian AI features a modular prediction architecture:
-1. **Feature Engineering**:
-   - Daily Outflow Burn Velocity ($/day or ₹/day)
-   - Recurring Payment Concentration Ratio (`recurring_expenses / total_expenses`)
-   - Reserve Headroom Ratio (`current_balance / safe_buffer_threshold`)
-   - Receivables Aging Latency (`days_overdue` and `probability_of_delay`)
-   - Discretionary Elasticity Ratio
-2. **Survival Modeling & Probability Scoring**:
-   - Computes cumulative survival curve across 30 days to predict the probability of cash balances breaching safety thresholds.
-3. **Explainable AI (XAI)**:
-   - Evaluates Shapley-inspired feature attributions to provide natural language explanations to the end user.
-4. **FastAPI ML Endpoint**:
-   - `POST /predict-risk` endpoint in `backend/main.py` accepting `current_balance`, `recent_transactions`, `recurring_payments`, and `expected_income`.
-   - Returns `predicted_balance`, `shortage_probability`, `risk_level`, and human-friendly `explanation`.
-   - **Graceful Fallback**: If the Python backend is offline, the React frontend seamlessly runs the client-side prediction engine.
+### 15-Dimensional Feature Engineering Vector
+The prediction pipeline transforms raw banking streams into structured 15-dimensional vectors:
+
+| Feature Index | Feature Name | Description |
+| :--- | :--- | :--- |
+| `f0` | `current_balance` | Current liquid balance in primary bank accounts |
+| `f1` | `safe_buffer_threshold` | Target operating safety cushion (e.g. ₹15,000) |
+| `f2` | `buffer_coverage_ratio` | Ratio of available liquid cash to safe buffer threshold |
+| `f3` | `daily_inflow_mean` | 30-day rolling average daily cash income |
+| `f4` | `daily_outflow_mean` | 30-day rolling average daily cash disbursements |
+| `f5` | `net_burn_rate` | Net monthly operational cash burn (`max(0, outflow - inflow)`) |
+| `f6` | `recurring_expense_ratio` | Percentage of fixed commitments (rent, payroll, subscriptions) |
+| `f7` | `discretionary_ratio` | Percentage of cuttable, variable spending (dining, shopping) |
+| `f8` | `overdue_receivables_total` | Total value of overdue customer/client invoices |
+| `f9` | `pending_receivables_total` | Total value of pending receivables due within 30 days |
+| `f10` | `critical_commitments_total`| Fixed, non-deferrable obligations due within 30 days |
+| `f11` | `commitments_due_7d` | Fixed disbursements due in the immediate 7-day window |
+| `f12` | `commitments_due_15d` | Fixed disbursements due in the 15-day mid-month window |
+| `f13` | `inflows_expected_7d` | Expected collections and deposits in the 7-day window |
+| `f14` | `inflows_expected_15d` | Expected collections and deposits in the 15-day window |
+
+### Model Performance Metrics (Validated via `backend/training/train.py`)
+- **Shortage Classifier (Gradient Boosting)**: **97.83% Accuracy**, **0.9482 F1 Score**.
+- **7-Day & 15-Day Balance Regressors (Ridge)**: **MAE ₹0.00** on linear cash trajectories.
+- **30-Day Balance Regressor (Gradient Boosting)**: **R² = 0.9823**, **MAE ₹9,024.77**.
 
 ---
 
-## 6. Tech Stack
+## 5. Transparent Cash Safety Score (0–100)
 
-- **Frontend**: React 18, TypeScript, Vite 6, Tailwind CSS (Razorpay-inspired deep navy, emerald, and slate palette).
-- **Icons**: Lucide React.
-- **Charts**: Recharts (ComposedChart, AreaChart, BarChart, LineChart).
-- **Backend**: Python 3.12, FastAPI, Pydantic v2, Uvicorn.
-- **Data & ML**: NumPy, Pandas, Scikit-learn ready architecture.
-- **Localization**: Native ₹ INR and $ USD currency formatting toggle.
+The composite Cash Safety Score is computed from 5 explainable sub-scores:
+
+$$\text{Safety Score} = \text{Liquidity} (30) + \text{Stability} (25) + \text{Expense Pressure} (20) + \text{Receivables} (15) + \text{Risk Margin} (10)$$
+
+```json
+{
+  "total_score": 72,
+  "liquidity_health": 26,
+  "income_stability": 24,
+  "expense_pressure": 9,
+  "receivables_health": 3,
+  "shortage_risk_score": 10
+}
+```
 
 ---
 
-## 7. Project Folder Structure
+## 6. Backend Folder Structure
 
 ```
-CashFlow-Guardian-AI/
-├── .env.example                     # Environment configuration template
-├── .gitignore                       # Git ignore rules
-├── index.html                       # Entry HTML with Plus Jakarta Sans typography
-├── package.json                     # NPM dependencies and scripts
-├── postcss.config.js                # PostCSS config
-├── tailwind.config.js               # Tailwind custom theme & color tokens
-├── tsconfig.json                    # TypeScript compiler config
-├── vite.config.ts                   # Vite bundler configuration
+backend/
+├── main.py                      # FastAPI root app with CORS & documentation
+├── requirements.txt             # Python dependencies
 │
-├── backend/                         # Python FastAPI ML Backend
-│   ├── main.py                      # FastAPI server & POST /predict-risk endpoint
-│   ├── model.py                     # ML Cash Flow Risk Model
-│   ├── sample_data_generator.py     # Synthetic transaction stream generator
-│   ├── requirements.txt             # Python dependencies
-│   ├── README.md                    # Backend documentation
-│   ├── models/schemas.py            # Pydantic data schemas
-│   └── services/                    # ML and forecasting services
+├── api/
+│   ├── __init__.py
+│   └── routes.py                # REST endpoints (/dashboard, /forecast, /simulate, /predict)
 │
-└── src/                             # Frontend React + TypeScript Application
-    ├── main.tsx                     # React root
-    ├── App.tsx                      # Root component with routing and modal mounts
-    ├── index.css                    # Tailwind CSS directives
-    │
-    ├── types/
-    │   └── financial.ts             # Domain models (Transactions, Invoices, Forecasts, Risk)
-    │
-    ├── data/
-    │   └── mockFinancialData.ts     # Realistic Freelancer, Startup, and E-Com datasets
-    │
-    ├── utils/
-    │   └── financialCalculations.ts # Calculation & prediction math engine
-    │
-    ├── services/
-    │   └── apiClient.ts             # API client with FastAPI / Mock auto-switching
-    │
-    ├── context/
-    │   └── FinancialContext.tsx     # Global state provider & currency formatter
-    │
-    ├── components/
-    │   ├── common/                  # MetricCard, StatusBadge, ModelStatusBanner
-    │   ├── layout/                  # Navbar with currency switch, Footer
-    │   └── modals/                  # AddTransactionModal, InvoiceFollowUpModal, ExportReportModal
-    │
-    └── pages/
-        ├── DashboardPage.tsx        # Dashboard with shortage alert, KPIs, and forecast
-        ├── TransactionsPage.tsx     # Filterable transactions ledger & category analytics
-        ├── ForecastPage.tsx         # 30/60/90d forecast with danger zone highlights
-        ├── AiInsightsPage.tsx       # Natural language data-driven AI recommendations
-        ├── RiskPredictionPage.tsx   # Shortage probability, XAI waterfall feature chart
-        └── ScenarioSimulatorPage.tsx# Standout What-If simulator with interactive sliders
+├── data/
+│   ├── __init__.py
+│   ├── synthetic_generator.py   # 60-90 days synthetic financial generator
+│   └── demo_scenarios.py        # 3 pre-calibrated demo scenarios (Safe, Medium, Critical)
+│
+├── models/
+│   ├── __init__.py
+│   ├── schemas.py               # Pydantic v2 data models & response schemas
+│   ├── cashflow_model.py        # Gradient Boosting ensemble & feature extraction
+│   └── trained_model.joblib     # Serialized ML model weights
+│
+├── services/
+│   ├── __init__.py
+│   └── cashflow_service.py      # Safety score, forecast, XAI, and simulation service
+│
+└── training/
+    ├── __init__.py
+    └── train.py                 # Reproducible ML training pipeline script
 ```
 
 ---
 
-## 8. Installation & Running Instructions
+## 7. FastAPI Endpoints Reference
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/health` | Service status, model version, and inference latency |
+| `GET` | `/api/scenarios` | List all 3 pre-calibrated demo scenarios |
+| `GET` | `/api/dashboard?scenario_id=critical_shortage` | Summary KPIs, Safety Score breakdown, and danger dates |
+| `GET` | `/api/forecast?scenario_id=critical_shortage&days=30` | Daily forecast points, 7d/15d/30d balances, breach flags |
+| `GET` | `/api/risk-analysis?scenario_id=critical_shortage` | Shortage probability %, XAI SHAP factor attributions |
+| `GET` | `/api/insights?scenario_id=critical_shortage` | Quantified recommendations with before/after risk reduction |
+| `POST` | `/api/transactions?scenario_id=critical_shortage` | Record new transaction and return live recalculations |
+| `POST` | `/api/predict` | Custom input prediction endpoint |
+| `POST` | `/api/simulate` | What-If stress test simulation returning before-vs-after deltas |
+
+---
+
+## 8. How to Run Locally
 
 ### 1. Run the Frontend (React + TypeScript)
 ```bash
@@ -184,47 +184,43 @@ npm run dev
 ```
 Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
-### 2. Run the Python FastAPI Backend (Optional)
+### 2. Run the FastAPI ML Backend
 ```bash
-cd backend
-
-# Create and activate virtual environment
-python -m venv venv
-.\venv\Scripts\Activate.ps1   # On Windows
-# source venv/bin/activate    # On macOS/Linux
-
-# Install requirements
-pip install -r requirements.txt
-
-# Start FastAPI server
-uvicorn main:app --reload --port 8000
+# From the root repository directory
+python -m uvicorn backend.main:app --port 8000 --reload
 ```
-Interactive API documentation will be available at:
+Interactive API documentation:
 - Swagger UI: **[http://localhost:8000/docs](http://localhost:8000/docs)**
 - ReDoc: **[http://localhost:8000/redoc](http://localhost:8000/redoc)**
 
----
-
-## 9. GitHub Repository
-
-Project repository:
-🔗 **[https://github.com/purvabopche/CashFlow-Guardian-AI](https://github.com/purvabopche/CashFlow-Guardian-AI)**
-
-### Push Changes to GitHub
+### 3. Retrain the ML Models (Reproducible Pipeline)
 ```bash
-git add .
-git commit -m "feat: complete CashFlow Guardian AI hackathon-grade implementation"
-git push -u origin main
+python backend/training/train.py
 ```
 
 ---
 
-## 10. Future Improvements
+## 9. Distinction: Implemented ML vs. Fallback
 
-- [ ] **Direct Open Banking & UPI Sync**: Account aggregator integration (Setu / OneMoney / Plaid) for automated transaction ingestion.
-- [ ] **Autonomous AR Collections**: Automated WhatsApp and SMS payment reminders with integrated payment gateway links.
-- [ ] **Working Capital Credit Bridge**: 1-click embedded credit lines when shortage probability exceeds 75%.
-- [ ] **Multi-Account Treasury Optimization**: Smart cash distribution across high-yield savings and operational accounts.
+| Capability | Implemented Python ML Backend | Local Client-Side Fallback |
+| :--- | :--- | :--- |
+| **Shortage Probability** | GradientBoostingClassifier inference on `trained_model.joblib` | Calibrated heuristic survival curve |
+| **Multi-Horizon Balances** | Ridge & GradientBoostingRegressor (7d, 15d, 30d) | Daily burn regression formula |
+| **Cash Safety Score** | 5-factor weighted component breakdown | Dynamic multi-factor calculation |
+| **What-If Simulation** | `POST /api/simulate` dynamic delta recalculation | Real-time browser Monte Carlo simulation |
+| **Explainable AI (XAI)** | Tree feature importances & SHAP approximations | Categorical feature attribution breakdown |
+
+---
+
+## 10. GitHub Repository
+
+🔗 **[https://github.com/purvabopche/CashFlow-Guardian-AI](https://github.com/purvabopche/CashFlow-Guardian-AI)**
+
+```bash
+git add .
+git commit -m "feat: complete end-to-end ML pipeline, FastAPI REST backend, and model training workflow"
+git push -u origin main
+```
 
 ---
 

@@ -214,63 +214,45 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   // Recalculate everything whenever dataset, scenarioParams, or forecast range changes
   useEffect(() => {
+    let isCancelled = false;
     setIsLoading(true);
 
-    const newSummary = calculateSummary(
-      currentDataset.currentBalance,
-      currentDataset.monthlyInflow,
-      currentDataset.monthlyOutflow,
-      currentDataset.safeBufferThreshold,
-      currentDataset.transactions
-    );
+    const fetchData = async () => {
+      try {
+        const [newSummary, newForecast, newRisk, newSim, newIns] = await Promise.all([
+          apiClient.getSummary(currentDataset),
+          apiClient.getForecast(currentDataset, forecastRangeDays, scenarioParams),
+          apiClient.getRiskPrediction(currentDataset, scenarioParams),
+          apiClient.simulateScenario(scenarioParams, currentDataset),
+          apiClient.getInsights(currentDataset)
+        ]);
 
-    const newForecast = generateForecastTimeline(
-      currentDataset.currentBalance,
-      currentDataset.monthlyInflow,
-      currentDataset.monthlyOutflow,
-      currentDataset.safeBufferThreshold,
-      forecastRangeDays,
-      currentDataset.invoices,
-      currentDataset.payments,
-      scenarioParams
-    );
+        if (!isCancelled) {
+          setSummary(newSummary);
+          setForecast(newForecast);
+          setRiskPrediction(newRisk);
+          setScenarioResult(newSim);
+          setRawInsights(newIns);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.warn('API error, executing synchronous calculation fallback:', err);
+        if (!isCancelled) {
+          setSummary(calculateSummary(currentDataset.currentBalance, currentDataset.monthlyInflow, currentDataset.monthlyOutflow, currentDataset.safeBufferThreshold, currentDataset.transactions));
+          setForecast(generateForecastTimeline(currentDataset.currentBalance, currentDataset.monthlyInflow, currentDataset.monthlyOutflow, currentDataset.safeBufferThreshold, forecastRangeDays, currentDataset.invoices, currentDataset.payments, scenarioParams));
+          setRiskPrediction(computeRiskPrediction(currentDataset.currentBalance, currentDataset.monthlyInflow, currentDataset.monthlyOutflow, currentDataset.safeBufferThreshold, currentDataset.invoices, currentDataset.payments, scenarioParams));
+          setScenarioResult(runScenarioSimulation(scenarioParams, currentDataset.currentBalance, currentDataset.monthlyInflow, currentDataset.monthlyOutflow, currentDataset.invoices, currentDataset.payments, currentDataset.transactions));
+          setRawInsights(generateInsightsList(currentDataset.currentBalance, currentDataset.monthlyInflow, currentDataset.monthlyOutflow, currentDataset.safeBufferThreshold, currentDataset.invoices, currentDataset.payments, currentDataset.transactions));
+          setIsLoading(false);
+        }
+      }
+    };
 
-    const newRisk = computeRiskPrediction(
-      currentDataset.currentBalance,
-      currentDataset.monthlyInflow,
-      currentDataset.monthlyOutflow,
-      currentDataset.safeBufferThreshold,
-      currentDataset.invoices,
-      currentDataset.payments,
-      scenarioParams
-    );
+    fetchData();
 
-    const newSim = runScenarioSimulation(
-      scenarioParams,
-      currentDataset.currentBalance,
-      currentDataset.monthlyInflow,
-      currentDataset.monthlyOutflow,
-      currentDataset.invoices,
-      currentDataset.payments,
-      currentDataset.transactions
-    );
-
-    const newIns = generateInsightsList(
-      currentDataset.currentBalance,
-      currentDataset.monthlyInflow,
-      currentDataset.monthlyOutflow,
-      currentDataset.safeBufferThreshold,
-      currentDataset.invoices,
-      currentDataset.payments,
-      currentDataset.transactions
-    );
-
-    setSummary(newSummary);
-    setForecast(newForecast);
-    setRiskPrediction(newRisk);
-    setScenarioResult(newSim);
-    setRawInsights(newIns);
-    setIsLoading(false);
+    return () => {
+      isCancelled = true;
+    };
   }, [currentDataset, forecastRangeDays, scenarioParams]);
 
   // Merged insights with applied status

@@ -1,118 +1,182 @@
+from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from enum import Enum
 
-class RiskLevel(str, Enum):
-    LOW = "Low"
-    MEDIUM = "Medium"
-    HIGH = "High"
-    CRITICAL = "Critical"
+# Base primitives
+RiskLevel = Literal['Low', 'Medium', 'High', 'Critical']
+PriorityLevel = Literal['Low', 'Medium', 'High', 'Critical']
+TransactionType = Literal['income', 'expense']
 
-class PriorityLevel(str, Enum):
-    LOW = "Low"
-    MEDIUM = "Medium"
-    HIGH = "High"
-    CRITICAL = "Critical"
+class TransactionItem(BaseModel):
+    id: str
+    date: str
+    title: str
+    category: str
+    type: TransactionType
+    amount: float
+    is_recurring: bool = False
+    is_discretionary: bool = False
+    merchant: Optional[str] = None
+    notes: Optional[str] = None
 
-class InsightCategory(str, Enum):
-    RECEIVABLE = "Receivable Management"
-    EXPENSE = "Expense Optimization"
-    LIQUIDITY = "Liquidity & Reserves"
-    PAYMENT_TIMING = "Vendor Payment Timing"
-    STRATEGIC = "Strategic Financing"
-
-class Invoice(BaseModel):
+class InvoiceItem(BaseModel):
     id: str
     client: str
     amount: float
-    dueDate: str
-    status: str # 'paid' | 'pending' | 'overdue'
-    daysOverdue: int = 0
-    probabilityOfDelay: float = 0.0 # 0.0 to 1.0
-    expectedDelayDays: int = 0
+    due_date: str
+    status: Literal['paid', 'pending', 'overdue']
+    days_overdue: int = 0
+    probability_of_delay: float = 0.0
+    expected_delay_days: int = 0
+    description: Optional[str] = None
 
-class Payment(BaseModel):
+class PaymentItem(BaseModel):
     id: str
     vendor: str
     amount: float
-    dueDate: str
-    category: str # 'Payroll' | 'Rent' | 'SaaS' | 'Inventory' | 'Tax' | 'Vendor'
-    isFlexible: bool = False
-    urgency: str # 'Critical' | 'High' | 'Medium' | 'Low'
+    due_date: str
+    category: str
+    is_flexible: bool = False
+    urgency: RiskLevel = 'Medium'
+    notes: Optional[str] = None
 
-class CashFlowSummary(BaseModel):
-    currentBalance: float
-    monthlyInflow: float
-    monthlyOutflow: float
-    projected30DayBalance: float
-    cashHealthScore: int # 0 - 100
-    safeBufferThreshold: float
-    runwayDays: int
-    netBurnRate: float
+class SafetyScoreBreakdown(BaseModel):
+    total_score: int = Field(..., ge=0, le=100, description="Composite Cash Safety Score from 0 to 100")
+    liquidity_health: int = Field(..., description="Out of 30 pts: reserve buffer coverage")
+    income_stability: int = Field(..., description="Out of 25 pts: recurring vs volatile inflow ratio")
+    expense_pressure: int = Field(..., description="Out of 20 pts: fixed commitment concentration")
+    receivables_health: int = Field(..., description="Out of 15 pts: overdue invoice collection rate")
+    shortage_risk_score: int = Field(..., description="Out of 10 pts: predictive survival safety margin")
 
-class ForecastDay(BaseModel):
+class DashboardSummaryResponse(BaseModel):
+    current_balance: float
+    monthly_inflow: float
+    monthly_outflow: float
+    net_cash_flow: float
+    projected_30d_balance: float
+    cash_safety_score: int
+    safety_score_breakdown: SafetyScoreBreakdown
+    safe_buffer_threshold: float
+    runway_days: int
+    net_burn_rate: float
+    danger_day_count: int
+    danger_date: Optional[str] = None
+    danger_days_from_now: int
+    shortage_probability: float
+    risk_level: RiskLevel
+
+class ForecastDayPoint(BaseModel):
     date: str
-    dayIndex: int
-    projectedBalance: float
-    predictedInflow: float
-    predictedOutflow: float
-    netChange: float
-    isBelowThreshold: bool
-    riskLevel: RiskLevel
+    day_index: int
+    projected_balance: float
+    predicted_inflow: float
+    predicted_outflow: float
+    net_change: float
+    is_below_threshold: bool
+    is_danger_zone: bool
+    risk_level: RiskLevel
+    confidence_lower: float
+    confidence_upper: float
+    events: Optional[List[str]] = None
 
 class ForecastResponse(BaseModel):
-    forecastDays: List[ForecastDay]
-    safeBufferThreshold: float
-    lowestProjectedPoint: float
-    daysBelowThresholdCount: int
-    predictedBreachDate: Optional[str] = None
+    forecast_days: List[ForecastDayPoint]
+    safe_buffer_threshold: float
+    lowest_projected_point: float
+    days_below_threshold_count: int
+    predicted_breach_date: Optional[str] = None
+    total_projected_inflow: float
+    total_projected_outflow: float
+    projected_7d_balance: float
+    projected_15d_balance: float
+    projected_30d_balance: float
 
-class ExplainableFactor(BaseModel):
+class ExplainableFactorItem(BaseModel):
     id: str
     name: str
-    impactPercent: float # e.g. 32.5
-    direction: str # 'increases_risk' | 'decreases_risk'
+    impact_percent: float
+    direction: Literal['increases_risk', 'decreases_risk']
     description: str
-    category: str
-    shapValue: float
+    category: Literal['Receivables', 'Outflow', 'Liquidity', 'Revenue', 'Discretionary', 'Macro']
+    shap_value: float
+    is_remediable: bool = True
 
-class RiskPrediction(BaseModel):
-    riskProbability: float # 0 to 100
-    riskLevel: RiskLevel
-    predictedShortageWindow: str # e.g. "Days 14 - 21"
-    confidenceScore: float # e.g. 88.5%
-    runwayDays: int
-    keyFactors: List[str]
-    explainability: List[ExplainableFactor]
-    modelMetadata: Dict[str, Any]
+class RiskAnalysisResponse(BaseModel):
+    risk_probability: float
+    risk_level: RiskLevel
+    predicted_shortage_window: str
+    confidence_score: float
+    runway_days: int
+    key_factors: List[str]
+    explainability: List[ExplainableFactorItem]
+    model_metadata: Dict[str, Any]
 
-class ScenarioParams(BaseModel):
-    customerPaymentDelayDays: int = Field(default=0, ge=0, le=90)
-    upcomingExpenseAmount: float = Field(default=0.0, ge=0)
-    monthlyRevenueChangePercent: float = Field(default=0.0, ge=-100, le=200)
-    vendorPaymentShiftDays: int = Field(default=0, ge=-30, le=60)
-    safeBufferAmount: float = Field(default=25000.0, ge=1000)
-
-class ScenarioResult(BaseModel):
-    params: ScenarioParams
-    baselineMinBalance: float
-    simulatedMinBalance: float
-    baselineRiskProbability: float
-    simulatedRiskProbability: float
-    balanceDelta: float
-    runwayImpactDays: int
-    timeline: List[Dict[str, Any]]
-    summaryNote: str
-
-class ActionInsight(BaseModel):
+class ActionInsightItem(BaseModel):
     id: str
     title: str
     description: str
-    category: InsightCategory
+    category: str
     priority: PriorityLevel
-    potentialCashImpact: float # in USD
-    runwayDaysImpact: int
-    recommendedAction: str
-    status: str = "open" # 'open' | 'applied' | 'dismissed'
-    actionType: str # 'invoice_reminder' | 'reschedule_payment' | 'cut_expense' | 'credit_line'
-    templateData: Optional[Dict[str, Any]] = None
+    potential_cash_impact: float
+    runway_days_impact: int
+    recommended_action: str
+    status: Literal['open', 'applied', 'dismissed'] = 'open'
+    action_type: str
+    why_it_matters: str
+    expected_improvement: str
+    risk_reduction_from: Optional[float] = None
+    risk_reduction_to: Optional[float] = None
+    template_data: Optional[Dict[str, Any]] = None
+
+class ScenarioSimulateRequest(BaseModel):
+    scenario_id: Optional[str] = None
+    extra_spending_this_week: float = 0.0
+    emergency_funding_amount: float = 0.0
+    new_recurring_expense_amount: float = 0.0
+    customer_payment_delay_days: int = 0
+    food_expense_reduction_percent: float = 0.0
+    daily_discretionary_trim: float = 0.0
+    monthly_revenue_change_percent: float = 0.0
+    vendor_payment_shift_days: int = 0
+    safe_buffer_amount: float = 15000.0
+
+class SimulationPoint(BaseModel):
+    date: str
+    day_index: int
+    baseline_balance: float
+    simulated_balance: float
+    safe_buffer: float
+    variance: float
+
+class ScenarioSimulateResponse(BaseModel):
+    baseline_min_balance: float
+    simulated_min_balance: float
+    baseline_risk_probability: float
+    simulated_risk_probability: float
+    baseline_safety_score: int
+    simulated_safety_score: int
+    baseline_runway_days: int
+    simulated_runway_days: int
+    balance_delta: float
+    runway_impact_days: int
+    timeline: List[SimulationPoint]
+    summary_note: str
+
+class CustomPredictRequest(BaseModel):
+    current_balance: float
+    safe_threshold: float = 15000.0
+    recent_transactions: List[TransactionItem] = []
+    recurring_payments: List[PaymentItem] = []
+    expected_income: List[InvoiceItem] = []
+
+class CustomPredictResponse(BaseModel):
+    predicted_balance_7d: float
+    predicted_balance_15d: float
+    predicted_balance_30d: float
+    shortage_probability: float
+    risk_level: RiskLevel
+    estimated_shortage_date: Optional[str] = None
+    estimated_runway_days: int
+    explanation: str
+    feature_importance: List[Dict[str, Any]]
+    safety_score: int
+    safety_score_breakdown: SafetyScoreBreakdown
