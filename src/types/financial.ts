@@ -1,11 +1,42 @@
 export type RiskLevel = 'Low' | 'Medium' | 'High' | 'Critical';
 export type PriorityLevel = 'Low' | 'Medium' | 'High' | 'Critical';
+export type CurrencyCode = 'INR' | 'USD';
+
 export type InsightCategory = 
   | 'Receivable Management' 
   | 'Expense Optimization' 
   | 'Liquidity & Reserves' 
   | 'Vendor Payment Timing' 
-  | 'Strategic Financing';
+  | 'Strategic Financing'
+  | 'Discretionary Spending'
+  | 'Recurring Subscriptions';
+
+export type TransactionCategory =
+  | 'Income'
+  | 'Rent & Living'
+  | 'Utilities'
+  | 'Subscriptions'
+  | 'Food & Dining'
+  | 'Groceries'
+  | 'Payroll & Team'
+  | 'Shopping'
+  | 'Travel & Commute'
+  | 'Taxes & Insurance'
+  | 'Equipment & Capex'
+  | 'Other';
+
+export interface Transaction {
+  id: string;
+  date: string;
+  title: string;
+  category: TransactionCategory;
+  type: 'income' | 'expense';
+  amount: number;
+  isRecurring: boolean;
+  isDiscretionary: boolean;
+  merchant?: string;
+  notes?: string;
+}
 
 export interface Invoice {
   id: string;
@@ -34,17 +65,28 @@ export interface CashFlowSummary {
   currentBalance: number;
   monthlyInflow: number;
   monthlyOutflow: number;
+  netCashFlow: number;
   projected30DayBalance: number;
-  cashHealthScore: number; // 0 to 100
+  cashHealthScore: number; // 0 to 100 Cash Safety Score
   safeBufferThreshold: number;
   runwayDays: number;
   netBurnRate: number;
+  dangerDayCount: number;
+  dangerDate: string | null;
   changeVsLastMonth: {
     balance: number;
     inflow: number;
     outflow: number;
     healthScore: number;
   };
+}
+
+export interface HistoricalPoint {
+  date: string;
+  dayIndex: number;
+  balance: number;
+  inflow: number;
+  outflow: number;
 }
 
 export interface ForecastDay {
@@ -55,14 +97,18 @@ export interface ForecastDay {
   predictedOutflow: number;
   netChange: number;
   isBelowThreshold: boolean;
+  isDangerZone: boolean;
   riskLevel: RiskLevel;
   confidenceLower?: number;
   confidenceUpper?: number;
   events?: string[];
+  isHistorical?: boolean;
 }
 
 export interface ForecastData {
+  historicalDays: HistoricalPoint[];
   forecastDays: ForecastDay[];
+  combinedTimeline: (ForecastDay & { isHistorical?: boolean })[];
   safeBufferThreshold: number;
   lowestProjectedPoint: number;
   daysBelowThresholdCount: number;
@@ -77,7 +123,7 @@ export interface ExplainableFactor {
   impactPercent: number;
   direction: 'increases_risk' | 'decreases_risk';
   description: string;
-  category: 'Receivables' | 'Outflow' | 'Liquidity' | 'Revenue' | 'Macro';
+  category: 'Receivables' | 'Outflow' | 'Liquidity' | 'Revenue' | 'Discretionary' | 'Macro';
   shapValue: number;
 }
 
@@ -100,11 +146,13 @@ export interface RiskPrediction {
 }
 
 export interface ScenarioParams {
-  customerPaymentDelayDays: number; // 0 to 60
-  upcomingExpenseAmount: number; // 0 to 100000
+  extraSpendingThisWeek: number; // e.g. ₹5,000 / $500
+  customerPaymentDelayDays: number; // e.g. 5 days salary/invoice delay
+  foodExpenseReductionPercent: number; // e.g. 20%
+  dailyDiscretionaryTrim: number; // e.g. ₹300/day
   monthlyRevenueChangePercent: number; // -50% to +50%
-  vendorPaymentShiftDays: number; // -30 to +45
-  safeBufferAmount: number; // min safe cash buffer
+  vendorPaymentShiftDays: number; // -15 to +30
+  safeBufferAmount: number; // target cushion
 }
 
 export interface ScenarioResult {
@@ -113,6 +161,8 @@ export interface ScenarioResult {
   simulatedMinBalance: number;
   baselineRiskProbability: number;
   simulatedRiskProbability: number;
+  baselineSafetyScore: number;
+  simulatedSafetyScore: number;
   balanceDelta: number;
   runwayImpactDays: number;
   timeline: {
@@ -132,11 +182,11 @@ export interface ActionInsight {
   description: string;
   category: InsightCategory;
   priority: PriorityLevel;
-  potentialCashImpact: number; // dollar impact
-  runwayDaysImpact: number; // days saved
+  potentialCashImpact: number;
+  runwayDaysImpact: number;
   recommendedAction: string;
   status: 'open' | 'applied' | 'dismissed';
-  actionType: 'invoice_reminder' | 'reschedule_payment' | 'cut_expense' | 'credit_line' | 'early_discount';
+  actionType: 'invoice_reminder' | 'reschedule_payment' | 'cut_expense' | 'credit_line' | 'cut_discretionary' | 'early_discount';
   templateData?: {
     client?: string;
     amount?: number;
@@ -163,6 +213,7 @@ export interface FinancialDataset {
   monthlyInflow: number;
   monthlyOutflow: number;
   safeBufferThreshold: number;
+  transactions: Transaction[];
   invoices: Invoice[];
   payments: Payment[];
 }

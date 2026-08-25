@@ -1,15 +1,250 @@
-import { FinancialDataset } from '../types/financial';
+import { FinancialDataset, Transaction } from '../types/financial';
+
+const generateHistoricalTransactions = (): Transaction[] => [
+  {
+    id: 'tx-101',
+    date: '2026-08-25',
+    title: 'Swiggy Gourmet Dinner & Groceries',
+    category: 'Food & Dining',
+    type: 'expense',
+    amount: 1450,
+    isRecurring: false,
+    isDiscretionary: true,
+    merchant: 'Swiggy Instamart'
+  },
+  {
+    id: 'tx-102',
+    date: '2026-08-24',
+    title: 'Uber Premier Airport Commute',
+    category: 'Travel & Commute',
+    type: 'expense',
+    amount: 1120,
+    isRecurring: false,
+    isDiscretionary: true,
+    merchant: 'Uber India'
+  },
+  {
+    id: 'tx-103',
+    date: '2026-08-22',
+    title: 'Figma & Notion Team Licenses',
+    category: 'Subscriptions',
+    type: 'expense',
+    amount: 3200,
+    isRecurring: true,
+    isDiscretionary: false,
+    merchant: 'Figma Inc'
+  },
+  {
+    id: 'tx-104',
+    date: '2026-08-20',
+    title: 'Freelance Client Retainer Milestone',
+    category: 'Income',
+    type: 'income',
+    amount: 38000,
+    isRecurring: false,
+    isDiscretionary: false,
+    merchant: 'Razorpay Payouts'
+  },
+  {
+    id: 'tx-105',
+    date: '2026-08-18',
+    title: 'Blue Tokai Cafe & Team Breakfast',
+    category: 'Food & Dining',
+    type: 'expense',
+    amount: 880,
+    isRecurring: false,
+    isDiscretionary: true,
+    merchant: 'Blue Tokai Coffee'
+  },
+  {
+    id: 'tx-106',
+    date: '2026-08-15',
+    title: 'AWS Cloud Hosting Cluster',
+    category: 'Subscriptions',
+    type: 'expense',
+    amount: 4800,
+    isRecurring: true,
+    isDiscretionary: false,
+    merchant: 'Amazon Web Services'
+  },
+  {
+    id: 'tx-107',
+    date: '2026-08-12',
+    title: 'Nature Basket Organic Groceries',
+    category: 'Groceries',
+    type: 'expense',
+    amount: 3400,
+    isRecurring: false,
+    isDiscretionary: false,
+    merchant: 'Nature Basket'
+  },
+  {
+    id: 'tx-108',
+    date: '2026-08-10',
+    title: 'Airtel Fiber Broadband & 5G',
+    category: 'Utilities',
+    type: 'expense',
+    amount: 1499,
+    isRecurring: true,
+    isDiscretionary: false,
+    merchant: 'Airtel Digital'
+  },
+  {
+    id: 'tx-109',
+    date: '2026-08-08',
+    title: 'Zomato Food Delivery',
+    category: 'Food & Dining',
+    type: 'expense',
+    amount: 720,
+    isRecurring: false,
+    isDiscretionary: true,
+    merchant: 'Zomato Ltd'
+  },
+  {
+    id: 'tx-110',
+    date: '2026-08-05',
+    title: 'Amazon Equipment & Ergonomic Monitor',
+    category: 'Equipment & Capex',
+    type: 'expense',
+    amount: 12500,
+    isRecurring: false,
+    isDiscretionary: true,
+    merchant: 'Amazon India'
+  },
+  {
+    id: 'tx-111',
+    date: '2026-08-01',
+    title: 'Studio Apartment Rent & Maintenance',
+    category: 'Rent & Living',
+    type: 'expense',
+    amount: 24000,
+    isRecurring: true,
+    isDiscretionary: false,
+    merchant: 'Direct Bank NEFT'
+  },
+  {
+    id: 'tx-112',
+    date: '2026-08-01',
+    title: 'Monthly Primary Client Retainer Deposit',
+    category: 'Income',
+    type: 'income',
+    amount: 55000,
+    isRecurring: true,
+    isDiscretionary: false,
+    merchant: 'Stripe Direct Deposit'
+  }
+];
 
 export const BUSINESS_DATASETS: Record<string, FinancialDataset> = {
+  freelancer_pro: {
+    id: 'freelancer_pro',
+    name: 'Aarav Sharma (Product Designer & Agency)',
+    industry: 'Design & Independent Consulting',
+    description: 'High-growth independent design consultant with lump-sum client milestone retainers, SaaS overhead, and recurring home-office rent.',
+    currentBalance: 34500,
+    monthlyInflow: 68000,
+    monthlyOutflow: 62000,
+    safeBufferThreshold: 15000,
+    transactions: generateHistoricalTransactions(),
+    invoices: [
+      {
+        id: 'INV-1042',
+        client: 'FinTech Startup Design System',
+        amount: 28500,
+        dueDate: '2026-09-06',
+        status: 'overdue',
+        daysOverdue: 12,
+        probabilityOfDelay: 0.85,
+        expectedDelayDays: 16,
+        description: 'Complete UI/UX design token system and mobile design library'
+      },
+      {
+        id: 'INV-1045',
+        client: 'HealthTech Platform Q3 Retainer',
+        amount: 18000,
+        dueDate: '2026-09-14',
+        status: 'pending',
+        daysOverdue: 0,
+        probabilityOfDelay: 0.20,
+        expectedDelayDays: 2,
+        description: 'Monthly ongoing UX sprint retainer'
+      },
+      {
+        id: 'INV-1048',
+        client: 'E-Commerce Mobile App Audit',
+        amount: 14000,
+        dueDate: '2026-09-22',
+        status: 'pending',
+        daysOverdue: 0,
+        probabilityOfDelay: 0.35,
+        expectedDelayDays: 6,
+        description: 'Conversion rate optimization UX audit and user research report'
+      }
+    ],
+    payments: [
+      {
+        id: 'PAY-801',
+        vendor: 'Studio Workspace & Residence Rent',
+        amount: 22000,
+        dueDate: '2026-09-01',
+        category: 'Rent',
+        isFlexible: false,
+        urgency: 'Critical',
+        notes: 'Monthly fixed lease commitment'
+      },
+      {
+        id: 'PAY-802',
+        vendor: 'Subcontracted 3D Motion Specialist',
+        amount: 15000,
+        dueDate: '2026-09-15',
+        category: 'Payroll',
+        isFlexible: true,
+        urgency: 'High',
+        notes: 'Can negotiate a 10-day milestone extension'
+      },
+      {
+        id: 'PAY-803',
+        vendor: 'Hardware Lease & MacBook EMI',
+        amount: 6800,
+        dueDate: '2026-09-10',
+        category: 'Vendor',
+        isFlexible: false,
+        urgency: 'High',
+        notes: 'Auto-debit from primary account'
+      },
+      {
+        id: 'PAY-804',
+        vendor: 'Figma, Adobe CC, Midjourney & Notion',
+        amount: 3800,
+        dueDate: '2026-09-08',
+        category: 'SaaS',
+        isFlexible: true,
+        urgency: 'Low',
+        notes: 'Software tools stack'
+      },
+      {
+        id: 'PAY-805',
+        vendor: 'Quarterly Advance Tax Installment',
+        amount: 11500,
+        dueDate: '2026-09-22',
+        category: 'Tax',
+        isFlexible: false,
+        urgency: 'Critical',
+        notes: 'Statutory deadline to avoid interest charges'
+      }
+    ]
+  },
+
   tech_startup: {
     id: 'tech_startup',
     name: 'NovaScale AI (B2B SaaS Startup)',
     industry: 'Enterprise Software & Cloud',
-    description: 'High-growth B2B SaaS company managing 18-month runway, bi-weekly payroll, and enterprise Net-45 receivables.',
+    description: 'High-growth B2B SaaS company managing 18-month runway, bi-weekly engineering payroll, and enterprise Net-45 receivables.',
     currentBalance: 42500,
     monthlyInflow: 58000,
     monthlyOutflow: 64500,
     safeBufferThreshold: 25000,
+    transactions: generateHistoricalTransactions(),
     invoices: [
       {
         id: 'INV-1042',
@@ -54,15 +289,6 @@ export const BUSINESS_DATASETS: Record<string, FinancialDataset> = {
         probabilityOfDelay: 0.15,
         expectedDelayDays: 0,
         description: 'Multi-Seat Enterprise Expansion Contract'
-      },
-      {
-        id: 'INV-1039',
-        client: 'Zenith Security',
-        amount: 8600,
-        dueDate: '2026-08-20',
-        status: 'paid',
-        daysOverdue: 0,
-        description: 'Implementation & SSO Onboarding Fee'
       }
     ],
     payments: [
@@ -128,6 +354,7 @@ export const BUSINESS_DATASETS: Record<string, FinancialDataset> = {
     monthlyInflow: 112000,
     monthlyOutflow: 118000,
     safeBufferThreshold: 40000,
+    transactions: generateHistoricalTransactions(),
     invoices: [
       {
         id: 'INV-EC-201',
@@ -203,94 +430,6 @@ export const BUSINESS_DATASETS: Record<string, FinancialDataset> = {
         isFlexible: false,
         urgency: 'Critical',
         notes: 'Full-time support and operations staff'
-      }
-    ]
-  },
-
-  agency: {
-    id: 'agency',
-    name: 'Kite Creative (Design & Product Agency)',
-    industry: 'Digital Agency & Consulting',
-    description: 'High-end digital product design studio with high payroll overhead and recurring delays in client sign-offs and invoice disbursements.',
-    currentBalance: 31000,
-    monthlyInflow: 48000,
-    monthlyOutflow: 45000,
-    safeBufferThreshold: 20000,
-    invoices: [
-      {
-        id: 'INV-AG-301',
-        client: 'FinTech Unicorn Web App Redesign',
-        amount: 22000,
-        dueDate: '2026-08-28',
-        status: 'overdue',
-        daysOverdue: 21,
-        probabilityOfDelay: 0.90,
-        expectedDelayDays: 25,
-        description: 'Phase 2 Milestone Completion signoff'
-      },
-      {
-        id: 'INV-AG-302',
-        client: 'HealthTech Retainer Q3',
-        amount: 14000,
-        dueDate: '2026-09-10',
-        status: 'pending',
-        daysOverdue: 0,
-        probabilityOfDelay: 0.25,
-        expectedDelayDays: 5,
-        description: 'Monthly UX Research & Design Sprint Retainer'
-      },
-      {
-        id: 'INV-AG-303',
-        client: 'CleanTech Mobile App MVP SOW',
-        amount: 16000,
-        dueDate: '2026-09-24',
-        status: 'pending',
-        daysOverdue: 0,
-        probabilityOfDelay: 0.35,
-        expectedDelayDays: 8,
-        description: 'Initial deposit for 8-week design sprint'
-      }
-    ],
-    payments: [
-      {
-        id: 'PAY-AG-201',
-        vendor: 'Product Designers & Contractors Payroll',
-        amount: 28000,
-        dueDate: '2026-09-15',
-        category: 'Payroll',
-        isFlexible: false,
-        urgency: 'Critical',
-        notes: 'Principal designers and contracted UI specialists'
-      },
-      {
-        id: 'PAY-AG-202',
-        vendor: 'Figma, Adobe Creative Cloud, & Notion Enterprise',
-        amount: 2400,
-        dueDate: '2026-09-05',
-        category: 'SaaS',
-        isFlexible: true,
-        urgency: 'Low',
-        notes: 'Design software tooling stack'
-      },
-      {
-        id: 'PAY-AG-203',
-        vendor: 'Senior 3D Motion Animator Contractor',
-        amount: 6500,
-        dueDate: '2026-09-18',
-        category: 'Vendor',
-        isFlexible: true,
-        urgency: 'Medium',
-        notes: 'Deliverable milestone payment for client video'
-      },
-      {
-        id: 'PAY-AG-204',
-        vendor: 'Design Studio Loft Lease',
-        amount: 4200,
-        dueDate: '2026-09-01',
-        category: 'Rent',
-        isFlexible: false,
-        urgency: 'High',
-        notes: 'Office lease downtown'
       }
     ]
   }

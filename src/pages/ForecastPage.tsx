@@ -10,7 +10,8 @@ import {
   Filter,
   Sliders,
   DollarSign,
-  Info
+  Info,
+  Clock
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -35,8 +36,8 @@ export const ForecastPage: React.FC = () => {
     forecastRangeDays,
     setForecastRangeDays,
     summary,
-    updateSafeBuffer,
-    dataset
+    formatCurrency,
+    updateSafeBuffer
   } = useFinancial();
 
   const [granularity, setGranularity] = useState<'daily' | 'weekly'>('daily');
@@ -65,14 +66,16 @@ export const ForecastPage: React.FC = () => {
           predictedOutflow: day.predictedOutflow,
           netChange: day.netChange,
           isBelowThreshold: day.isBelowThreshold,
+          isDangerZone: day.isDangerZone,
           riskLevel: day.riskLevel
         };
       } else {
-        currentWeek.projectedBalance = day.projectedBalance; // end-of-week balance
+        currentWeek.projectedBalance = day.projectedBalance;
         currentWeek.predictedInflow += day.predictedInflow;
         currentWeek.predictedOutflow += day.predictedOutflow;
         currentWeek.netChange += day.netChange;
         if (day.isBelowThreshold) currentWeek.isBelowThreshold = true;
+        if (day.isDangerZone) currentWeek.isDangerZone = true;
         if (day.riskLevel === 'Critical' || day.riskLevel === 'High') {
           currentWeek.riskLevel = day.riskLevel;
         }
@@ -90,7 +93,7 @@ export const ForecastPage: React.FC = () => {
 
   const handleBufferSave = () => {
     const val = parseFloat(bufferInput);
-    if (!isNaN(val) && val >= 1000) {
+    if (!isNaN(val) && val >= 500) {
       updateSafeBuffer(val);
       setEditingBuffer(false);
     }
@@ -103,18 +106,18 @@ export const ForecastPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Cash Flow Forecast
+              Cash Flow Forecast & Danger Zone
             </h1>
             <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
               Predictive Time-Series
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Projected daily and weekly liquidity balance with safe buffer boundary triggers.
+            Historical liquidity trajectory + {forecastRangeDays}-day predicted cash balance with safe boundary triggers.
           </p>
         </div>
 
-        {/* Forecast Horizon Switcher (30, 60, 90 days) */}
+        {/* Forecast Horizon Switcher */}
         <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
           {[30, 60, 90].map((days) => (
             <button
@@ -126,7 +129,7 @@ export const ForecastPage: React.FC = () => {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {days} Days
+              {days} Days Horizon
             </button>
           ))}
         </div>
@@ -135,9 +138,9 @@ export const ForecastPage: React.FC = () => {
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Safe Cash Buffer"
-          value={`$${summary.safeBufferThreshold.toLocaleString()}`}
-          subValue={editingBuffer ? 'Enter new threshold' : 'Click to adjust target'}
+          title="Safe Cash Buffer Target"
+          value={formatCurrency(summary.safeBufferThreshold)}
+          subValue={editingBuffer ? 'Enter target amount' : 'Click to adjust target'}
           icon={Shield}
           iconBg="bg-blue-50"
           iconColor="text-blue-600"
@@ -153,7 +156,7 @@ export const ForecastPage: React.FC = () => {
 
         <MetricCard
           title="Lowest Projected Point"
-          value={`$${forecast.lowestProjectedPoint.toLocaleString()}`}
+          value={formatCurrency(forecast.lowestProjectedPoint)}
           subValue={forecast.lowestProjectedPoint >= summary.safeBufferThreshold ? 'Safe Cushion Maintained' : 'Deficit Risk Detected'}
           variant={forecast.lowestProjectedPoint >= summary.safeBufferThreshold ? 'highlight' : 'danger'}
           icon={TrendingUp}
@@ -162,7 +165,7 @@ export const ForecastPage: React.FC = () => {
         />
 
         <MetricCard
-          title="Days Below Buffer"
+          title="Days in Danger Zone"
           value={`${forecast.daysBelowThresholdCount} Days`}
           subValue={forecast.predictedBreachDate ? `First breach: ${forecast.predictedBreachDate}` : 'No buffer breach predicted'}
           icon={AlertTriangle}
@@ -172,15 +175,15 @@ export const ForecastPage: React.FC = () => {
 
         <MetricCard
           title="Total Projected Inflow"
-          value={`$${forecast.totalProjectedInflow.toLocaleString()}`}
-          subValue={`Outflow: $${forecast.totalProjectedOutflow.toLocaleString()}`}
+          value={formatCurrency(forecast.totalProjectedInflow)}
+          subValue={`Projected Outflow: ${formatCurrency(forecast.totalProjectedOutflow)}`}
           icon={ArrowDownLeft}
           iconBg="bg-slate-100"
           iconColor="text-slate-800"
         />
       </div>
 
-      {/* Inline Safe Buffer Editor if open */}
+      {/* Inline Safe Buffer Editor */}
       {editingBuffer && (
         <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 flex flex-col sm:flex-row items-center justify-between gap-3 animate-slide-up">
           <div className="flex items-center gap-2">
@@ -190,44 +193,41 @@ export const ForecastPage: React.FC = () => {
             </span>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-40">
-              <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="number"
-                min="1000"
-                step="1000"
-                value={bufferInput}
-                onChange={(e) => setBufferInput(e.target.value)}
-                className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <input
+              type="number"
+              min="500"
+              step="500"
+              value={bufferInput}
+              onChange={(e) => setBufferInput(e.target.value)}
+              className="w-full sm:w-40 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
             <button
               onClick={handleBufferSave}
               className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 text-xs font-bold shadow-sm"
             >
-              Save Buffer
+              Save Target
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Forecast Chart Card */}
+      {/* Main Forecast Chart Card with Danger Zone Shading */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-slate-900">
-                {forecastRangeDays}-Day Cash Flow & Liquidity Projection
+                Projected Balance Trajectory & Inflow/Outflow Breakdown
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Line represents closing cash balance; columns represent daily inflows vs disbursements.
+              Black line shows daily projected cash balance; vertical bars show daily cash inflows vs outflows.
             </p>
           </div>
 
           {/* Granularity Switcher */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500">View:</span>
+            <span className="text-xs text-slate-500">Aggregation:</span>
             <div className="flex items-center bg-slate-100 p-0.5 rounded-lg">
               <button
                 onClick={() => setGranularity('daily')}
@@ -265,7 +265,7 @@ export const ForecastPage: React.FC = () => {
                 tick={{ fontSize: 11, fill: '#64748B' }}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                tickFormatter={(val) => formatCurrency(val, true)}
               />
               <YAxis
                 yAxisId="flows"
@@ -273,7 +273,7 @@ export const ForecastPage: React.FC = () => {
                 tick={{ fontSize: 10, fill: '#94A3B8' }}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                tickFormatter={(val) => formatCurrency(val, true)}
               />
               <Tooltip
                 content={({ active, payload, label }) => {
@@ -284,21 +284,26 @@ export const ForecastPage: React.FC = () => {
                         <div className="font-bold text-emerald-400 border-b border-slate-800 pb-1 flex justify-between gap-4">
                           <span>{label}</span>
                           <span className={`px-1.5 py-0.2 rounded text-[10px] uppercase font-mono ${data.isBelowThreshold ? 'bg-rose-900 text-rose-300' : 'bg-emerald-900 text-emerald-300'}`}>
-                            {data.riskLevel}
+                            {data.riskLevel} Risk
                           </span>
                         </div>
                         <div className="flex justify-between gap-4">
                           <span className="text-slate-400">Closing Balance:</span>
-                          <span className="font-bold text-white font-mono">${data.projectedBalance.toLocaleString()}</span>
+                          <span className="font-bold text-white font-mono">{formatCurrency(data.projectedBalance)}</span>
                         </div>
                         <div className="flex justify-between gap-4">
                           <span className="text-emerald-400">Inflow:</span>
-                          <span className="font-mono text-emerald-400 font-semibold">+${data.predictedInflow.toLocaleString()}</span>
+                          <span className="font-mono text-emerald-400 font-semibold">+{formatCurrency(data.predictedInflow)}</span>
                         </div>
                         <div className="flex justify-between gap-4">
                           <span className="text-rose-400">Outflow:</span>
-                          <span className="font-mono text-rose-400 font-semibold">-${data.predictedOutflow.toLocaleString()}</span>
+                          <span className="font-mono text-rose-400 font-semibold">-{formatCurrency(data.predictedOutflow)}</span>
                         </div>
+                        {data.events && (
+                          <div className="pt-1 text-[10px] text-amber-300 border-t border-slate-800">
+                            • {data.events.join(', ')}
+                          </div>
+                        )}
                       </div>
                     );
                   }
@@ -317,7 +322,7 @@ export const ForecastPage: React.FC = () => {
                 strokeDasharray="4 4"
                 strokeWidth={2}
                 label={{
-                  value: `Safe Buffer ($${(summary.safeBufferThreshold / 1000).toFixed(0)}k)`,
+                  value: `Danger Zone Threshold (${formatCurrency(summary.safeBufferThreshold)})`,
                   position: 'top',
                   fill: '#F43F5E',
                   fontSize: 10,
@@ -327,7 +332,7 @@ export const ForecastPage: React.FC = () => {
               <Bar
                 yAxisId="flows"
                 dataKey="predictedInflow"
-                name="Predicted Inflow"
+                name="Inflow Events"
                 fill="#10B981"
                 opacity={0.7}
                 radius={[4, 4, 0, 0]}
@@ -335,7 +340,7 @@ export const ForecastPage: React.FC = () => {
               <Bar
                 yAxisId="flows"
                 dataKey="predictedOutflow"
-                name="Predicted Outflow"
+                name="Disbursements"
                 fill="#F43F5E"
                 opacity={0.6}
                 radius={[4, 4, 0, 0]}
@@ -344,7 +349,7 @@ export const ForecastPage: React.FC = () => {
                 yAxisId="balance"
                 type="monotone"
                 dataKey="projectedBalance"
-                name="Projected Balance"
+                name="Projected Closing Balance"
                 stroke="#0F172A"
                 strokeWidth={3}
                 dot={false}
@@ -358,9 +363,9 @@ export const ForecastPage: React.FC = () => {
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
           <div>
-            <h3 className="text-base font-bold text-slate-900">Timeline Daily Forecast Ledger</h3>
+            <h3 className="text-base font-bold text-slate-900">Forecast Ledger & Danger Zone Triggers</h3>
             <p className="text-xs text-slate-500">
-              Audit granular projected balances and safety buffer compliance day by day.
+              Audit day-by-day closing balances against buffer limits and scheduled events.
             </p>
           </div>
 
@@ -373,7 +378,7 @@ export const ForecastPage: React.FC = () => {
             }`}
           >
             <Filter className="w-3.5 h-3.5" />
-            <span>{filterRiskOnly ? 'Showing Buffer Breaches Only' : 'Filter High Risk Days'}</span>
+            <span>{filterRiskOnly ? 'Showing Danger Zone Days Only' : 'Filter Danger Days'}</span>
           </button>
         </div>
 
@@ -382,13 +387,13 @@ export const ForecastPage: React.FC = () => {
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-600 font-bold uppercase text-[11px]">
                 <th className="py-3 px-3">Date</th>
-                <th className="py-3 px-3">Day</th>
+                <th className="py-3 px-3">Timeline</th>
                 <th className="py-3 px-3">Projected Balance</th>
                 <th className="py-3 px-3 text-emerald-700">Inflow</th>
                 <th className="py-3 px-3 text-rose-700">Outflow</th>
                 <th className="py-3 px-3">Net Change</th>
-                <th className="py-3 px-3">Risk Level</th>
-                <th className="py-3 px-3">Events / Triggers</th>
+                <th className="py-3 px-3">Status</th>
+                <th className="py-3 px-3">Events & Triggers</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -403,18 +408,18 @@ export const ForecastPage: React.FC = () => {
                   <td className="py-3 px-3 text-slate-500 font-mono">Day {d.dayIndex}</td>
                   <td className="py-3 px-3 font-bold font-mono">
                     <span className={d.isBelowThreshold ? 'text-rose-600' : 'text-slate-900'}>
-                      ${d.projectedBalance.toLocaleString()}
+                      {formatCurrency(d.projectedBalance)}
                     </span>
                   </td>
                   <td className="py-3 px-3 font-mono text-emerald-600 font-medium">
-                    +${d.predictedInflow.toLocaleString()}
+                    +{formatCurrency(d.predictedInflow)}
                   </td>
                   <td className="py-3 px-3 font-mono text-rose-600 font-medium">
-                    -${d.predictedOutflow.toLocaleString()}
+                    -{formatCurrency(d.predictedOutflow)}
                   </td>
                   <td className="py-3 px-3 font-mono font-medium">
                     <span className={d.netChange >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                      {d.netChange >= 0 ? `+$${d.netChange.toLocaleString()}` : `-$${Math.abs(d.netChange).toLocaleString()}`}
+                      {d.netChange >= 0 ? `+${formatCurrency(d.netChange)}` : `-${formatCurrency(Math.abs(d.netChange))}`}
                     </span>
                   </td>
                   <td className="py-3 px-3">
@@ -426,7 +431,7 @@ export const ForecastPage: React.FC = () => {
                         {d.events.join('; ')}
                       </span>
                     ) : (
-                      <span className="text-slate-400">Regular Flow</span>
+                      <span className="text-slate-400">Normal Flow</span>
                     )}
                   </td>
                 </tr>

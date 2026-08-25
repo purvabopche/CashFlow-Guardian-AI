@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, Field
 
 from backend.models.schemas import (
     CashFlowSummary,
@@ -16,11 +17,12 @@ from backend.services.ml_engine import ml_engine
 from backend.services.forecast_service import forecast_service
 from backend.services.scenario_service import scenario_service
 from backend.services.insights_service import insights_service
+from backend.model import risk_model
 
 app = FastAPI(
     title="CashFlow Guardian AI - ML Risk & Forecast Backend",
-    description="Production-ready predictive cash flow forecasting, shortage risk scoring, explainable AI, and scenario simulation API for SMEs.",
-    version="1.0.0"
+    description="Production-ready predictive cash flow forecasting, shortage risk scoring, explainable AI, and scenario simulation API for SMEs and individuals.",
+    version="1.3.0"
 )
 
 # Configure CORS for frontend access
@@ -32,10 +34,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Request Schema for the dedicated ML Shortage Risk Endpoint
+class PredictRiskRequest(BaseModel):
+    current_balance: float = Field(..., description="Current available liquid cash balance")
+    recent_transactions: List[Dict[str, Any]] = Field(default_factory=list, description="Historical transaction records")
+    recurring_payments: List[Dict[str, Any]] = Field(default_factory=list, description="Scheduled recurring subscriptions/bills")
+    expected_income: float = Field(default=0.0, description="Expected primary monthly or milestone income")
+    safe_threshold: float = Field(default=5000.0, description="Minimum safe cash buffer threshold")
+    forecast_days: int = Field(default=30, description="Horizon in days to project")
+
 # Demo mock business dataset presets for standalone backend testing
 DATASETS: Dict[str, Dict[str, Any]] = {
+    "individual_freelance": {
+        "name": "Alex Chen (Freelance Product Designer)",
+        "industry": "Freelance & Creative Services",
+        "currentBalance": 38500.0,
+        "monthlyInflow": 72000.0,
+        "monthlyOutflow": 68000.0,
+        "safeBufferThreshold": 12000.0,
+        "invoices": [
+            {"id": "INV-ALX-01", "client": "Fintech Design Sprint Q3", "amount": 32000.0, "dueDate": "2026-09-04", "status": "overdue", "daysOverdue": 12, "probabilityOfDelay": 0.80, "expectedDelayDays": 16},
+            {"id": "INV-ALX-02", "client": "Brand Identity Retainer", "amount": 18000.0, "dueDate": "2026-09-15", "status": "pending", "daysOverdue": 0, "probabilityOfDelay": 0.20, "expectedDelayDays": 2},
+            {"id": "INV-ALX-03", "client": "Mobile App UI Overhaul", "amount": 22000.0, "dueDate": "2026-09-24", "status": "pending", "daysOverdue": 0, "probabilityOfDelay": 0.30, "expectedDelayDays": 5},
+        ],
+        "payments": [
+            {"id": "PAY-ALX-01", "vendor": "Apartment Studio Rent & Maintenance", "amount": 22000.0, "dueDate": "2026-09-01", "category": "Rent", "isFlexible": False, "urgency": "High"},
+            {"id": "PAY-ALX-02", "vendor": "MacBook Pro Hardware EMI", "amount": 8500.0, "dueDate": "2026-09-10", "category": "Vendor", "isFlexible": False, "urgency": "High"},
+            {"id": "PAY-ALX-03", "vendor": "Subcontracted 3D Motion Specialist", "amount": 16000.0, "dueDate": "2026-09-16", "category": "Payroll", "isFlexible": True, "urgency": "Critical"},
+            {"id": "PAY-ALX-04", "vendor": "Figma, Adobe CC, Midjourney & Notion", "amount": 4200.0, "dueDate": "2026-09-08", "category": "SaaS", "isFlexible": True, "urgency": "Low"},
+            {"id": "PAY-ALX-05", "vendor": "Estimated Advance Tax Installment", "amount": 12500.0, "dueDate": "2026-09-22", "category": "Tax", "isFlexible": False, "urgency": "Critical"},
+        ]
+    },
     "tech_startup": {
         "name": "NovaScale SaaS (Tech Startup)",
+        "industry": "Enterprise Software & Cloud",
         "currentBalance": 42500.0,
         "monthlyInflow": 58000.0,
         "monthlyOutflow": 64500.0,
@@ -56,6 +88,7 @@ DATASETS: Dict[str, Dict[str, Any]] = {
     },
     "ecommerce": {
         "name": "Lumina Goods (E-commerce Retail)",
+        "industry": "Consumer Goods & Retail",
         "currentBalance": 68000.0,
         "monthlyInflow": 112000.0,
         "monthlyOutflow": 118000.0,
@@ -71,24 +104,6 @@ DATASETS: Dict[str, Dict[str, Any]] = {
             {"id": "PAY-EC-103", "vendor": "3PL Fulfillment Logistics", "amount": 16500.0, "dueDate": "2026-09-20", "category": "Vendor", "isFlexible": False, "urgency": "High"},
             {"id": "PAY-EC-104", "vendor": "Operations Staff Payroll", "amount": 14000.0, "dueDate": "2026-09-15", "category": "Payroll", "isFlexible": False, "urgency": "Critical"},
         ]
-    },
-    "agency": {
-        "name": "Kite Creative (Design & Growth Agency)",
-        "currentBalance": 31000.0,
-        "monthlyInflow": 48000.0,
-        "monthlyOutflow": 45000.0,
-        "safeBufferThreshold": 20000.0,
-        "invoices": [
-            {"id": "INV-AG-301", "client": "FinTech Unicorn Brand Redesign", "amount": 22000.0, "dueDate": "2026-08-28", "status": "overdue", "daysOverdue": 21, "probabilityOfDelay": 0.90, "expectedDelayDays": 25},
-            {"id": "INV-AG-302", "client": "HealthTech Retainer Q3", "amount": 14000.0, "dueDate": "2026-09-10", "status": "pending", "daysOverdue": 0, "probabilityOfDelay": 0.25, "expectedDelayDays": 5},
-            {"id": "INV-AG-303", "client": "E-Com Mobile App SOW", "amount": 16000.0, "dueDate": "2026-09-24", "status": "pending", "daysOverdue": 0, "probabilityOfDelay": 0.35, "expectedDelayDays": 8},
-        ],
-        "payments": [
-            {"id": "PAY-AG-201", "vendor": "Designers & Dev Payroll", "amount": 28000.0, "dueDate": "2026-09-15", "category": "Payroll", "isFlexible": False, "urgency": "Critical"},
-            {"id": "PAY-AG-202", "vendor": "Figma / Adobe / Notion Subscriptions", "amount": 2400.0, "dueDate": "2026-09-05", "category": "SaaS", "isFlexible": True, "urgency": "Low"},
-            {"id": "PAY-AG-203", "vendor": "Contract Motion Animator", "amount": 6500.0, "dueDate": "2026-09-18", "category": "Vendor", "isFlexible": True, "urgency": "Medium"},
-            {"id": "PAY-AG-204", "vendor": "Studio Loft Lease", "amount": 4200.0, "dueDate": "2026-09-01", "category": "Rent", "isFlexible": False, "urgency": "High"},
-        ]
     }
 }
 
@@ -97,10 +112,27 @@ def health_check():
     return {
         "status": "healthy",
         "service": "CashFlow Guardian ML Engine",
-        "version": "1.0.0",
+        "version": "1.3.0",
         "modelReady": True,
         "inferencePipeline": "Online"
     }
+
+@app.post("/predict-risk")
+@app.post("/api/predict-risk")
+def predict_shortage_risk_endpoint(req: PredictRiskRequest):
+    """
+    Dedicated ML Shortage Risk Endpoint.
+    Evaluates current balance, recent transactions, recurring payments, and expected income.
+    Returns predicted balance, shortage probability %, risk level, and human-friendly explanation.
+    """
+    return risk_model.predict_risk(
+        current_balance=req.current_balance,
+        recent_transactions=req.recent_transactions,
+        recurring_payments=req.recurring_payments,
+        expected_income=req.expected_income,
+        safe_threshold=req.safe_threshold,
+        forecast_days=req.forecast_days
+    )
 
 @app.get("/api/datasets")
 def get_datasets():

@@ -8,12 +8,15 @@ import {
   ScenarioResult,
   ActionInsight,
   Invoice,
-  Payment
+  Payment,
+  Transaction,
+  CurrencyCode
 } from '../types/financial';
 import { BUSINESS_DATASETS } from '../data/mockFinancialData';
 import { apiClient, BackendStatus } from '../services/apiClient';
+import { calculateSummary, generateForecastTimeline, computeRiskPrediction, runScenarioSimulation, generateInsightsList } from '../utils/financialCalculations';
 
-export type ActivePage = 'landing' | 'dashboard' | 'forecast' | 'risk' | 'simulator' | 'insights';
+export type ActivePage = 'dashboard' | 'transactions' | 'forecast' | 'insights' | 'risk' | 'simulator';
 
 interface FinancialContextType {
   activePage: ActivePage;
@@ -22,6 +25,10 @@ interface FinancialContextType {
   setDatasetKey: (key: string) => void;
   dataset: FinancialDataset;
   allDatasets: Record<string, FinancialDataset>;
+  
+  currency: CurrencyCode;
+  setCurrency: (c: CurrencyCode) => void;
+  formatCurrency: (val: number, compact?: boolean) => string;
   
   summary: CashFlowSummary;
   forecast: ForecastData;
@@ -48,6 +55,8 @@ interface FinancialContextType {
   isExportModalOpen: boolean;
   setIsExportModalOpen: (open: boolean) => void;
   
+  addTransaction: (tx: Omit<Transaction, 'id'>) => void;
+  deleteTransaction: (id: string) => void;
   addInvoice: (invoice: Omit<Invoice, 'id'>) => void;
   addPayment: (payment: Omit<Payment, 'id'>) => void;
   updateSafeBuffer: (newBuffer: number) => void;
@@ -61,19 +70,22 @@ interface FinancialContextType {
 }
 
 const DEFAULT_SCENARIO_PARAMS: ScenarioParams = {
+  extraSpendingThisWeek: 0,
   customerPaymentDelayDays: 0,
-  upcomingExpenseAmount: 0,
+  foodExpenseReductionPercent: 0,
+  dailyDiscretionaryTrim: 0,
   monthlyRevenueChangePercent: 0,
   vendorPaymentShiftDays: 0,
-  safeBufferAmount: 25000
+  safeBufferAmount: 15000
 };
 
 const FinancialContext = createContext<FinancialContextType | undefined>(undefined);
 
 export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [activePage, setActivePage] = useState<ActivePage>('landing');
-  const [currentDatasetKey, setCurrentDatasetKey] = useState<string>('tech_startup');
+  const [activePage, setActivePage] = useState<ActivePage>('dashboard');
+  const [currentDatasetKey, setCurrentDatasetKey] = useState<string>('freelancer_pro');
   const [datasets, setDatasets] = useState<Record<string, FinancialDataset>>(BUSINESS_DATASETS);
+  const [currency, setCurrency] = useState<CurrencyCode>('INR');
   const [forecastRangeDays, setForecastRangeDays] = useState<number>(30);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -86,7 +98,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [activeInvoiceForModal, setActiveInvoiceForModal] = useState<Invoice | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  const currentDataset = datasets[currentDatasetKey] || datasets.tech_startup;
+  const currentDataset = datasets[currentDatasetKey] || datasets.freelancer_pro;
 
   const [scenarioParams, setScenarioParams] = useState<ScenarioParams>({
     ...DEFAULT_SCENARIO_PARAMS,
@@ -120,86 +132,143 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     }, 4000);
   };
 
-  // Calculations synced to current dataset and active forecast range
-  const [summary, setSummary] = useState<CashFlowSummary>(() => ({
-    currentBalance: currentDataset.currentBalance,
-    monthlyInflow: currentDataset.monthlyInflow,
-    monthlyOutflow: currentDataset.monthlyOutflow,
-    projected30DayBalance: currentDataset.currentBalance + (currentDataset.monthlyInflow - currentDataset.monthlyOutflow),
-    cashHealthScore: 72,
-    safeBufferThreshold: currentDataset.safeBufferThreshold,
-    runwayDays: 28,
-    netBurnRate: Math.max(0, currentDataset.monthlyOutflow - currentDataset.monthlyInflow),
-    changeVsLastMonth: { balance: 4.2, inflow: 8.5, outflow: 3.1, healthScore: 6 }
-  }));
+  const formatCurrency = (val: number, compact: boolean = false): string => {
+    const symbol = currency === 'INR' ? '₹' : '$';
+    const rate = currency === 'INR' ? 1.0 : 0.012; // conversion multiplier
+    const converted = val * rate;
 
-  const [forecast, setForecast] = useState<ForecastData>(() => ({
-    forecastDays: [],
-    safeBufferThreshold: currentDataset.safeBufferThreshold,
-    lowestProjectedPoint: currentDataset.currentBalance,
-    daysBelowThresholdCount: 0,
-    predictedBreachDate: null,
-    totalProjectedInflow: currentDataset.monthlyInflow,
-    totalProjectedOutflow: currentDataset.monthlyOutflow
-  }));
-
-  const [riskPrediction, setRiskPrediction] = useState<RiskPrediction>(() => ({
-    riskProbability: 74,
-    riskLevel: 'High',
-    predictedShortageWindow: 'Days 14 – 21',
-    confidenceScore: 89.4,
-    runwayDays: 28,
-    keyFactors: [],
-    explainability: [],
-    modelMetadata: {
-      modelVersion: 'v1.2.0-fastapi-ensemble',
-      modelType: 'Gradient Boosted Cash Survival Classifier',
-      trainingStatus: 'Calibrated Heuristic Pipeline',
-      inferenceLatencyMs: 14.2,
-      featuresEvaluated: 18,
-      isMockOrLive: 'mock_local'
+    if (compact) {
+      if (Math.abs(converted) >= 10000000 && currency === 'INR') {
+        return `${symbol}${(converted / 10000000).toFixed(1)}Cr`;
+      }
+      if (Math.abs(converted) >= 100000 && currency === 'INR') {
+        return `${symbol}${(converted / 100000).toFixed(1)}L`;
+      }
+      if (Math.abs(converted) >= 1000) {
+        return `${symbol}${(converted / 1000).toFixed(0)}k`;
+      }
     }
-  }));
 
-  const [scenarioResult, setScenarioResult] = useState<ScenarioResult>(() => ({
-    params: scenarioParams,
-    baselineMinBalance: 12000,
-    simulatedMinBalance: 12000,
-    baselineRiskProbability: 74,
-    simulatedRiskProbability: 74,
-    balanceDelta: 0,
-    runwayImpactDays: 0,
-    timeline: [],
-    summaryNote: 'Adjust sliders to evaluate financial resilience.'
-  }));
+    return `${symbol}${Math.round(converted).toLocaleString()}`;
+  };
 
-  const [rawInsights, setRawInsights] = useState<ActionInsight[]>([]);
+  // Calculations synced to current dataset and active forecast range
+  const [summary, setSummary] = useState<CashFlowSummary>(() =>
+    calculateSummary(
+      currentDataset.currentBalance,
+      currentDataset.monthlyInflow,
+      currentDataset.monthlyOutflow,
+      currentDataset.safeBufferThreshold,
+      currentDataset.transactions
+    )
+  );
+
+  const [forecast, setForecast] = useState<ForecastData>(() =>
+    generateForecastTimeline(
+      currentDataset.currentBalance,
+      currentDataset.monthlyInflow,
+      currentDataset.monthlyOutflow,
+      currentDataset.safeBufferThreshold,
+      30,
+      currentDataset.invoices,
+      currentDataset.payments
+    )
+  );
+
+  const [riskPrediction, setRiskPrediction] = useState<RiskPrediction>(() =>
+    computeRiskPrediction(
+      currentDataset.currentBalance,
+      currentDataset.monthlyInflow,
+      currentDataset.monthlyOutflow,
+      currentDataset.safeBufferThreshold,
+      currentDataset.invoices,
+      currentDataset.payments
+    )
+  );
+
+  const [scenarioResult, setScenarioResult] = useState<ScenarioResult>(() =>
+    runScenarioSimulation(
+      scenarioParams,
+      currentDataset.currentBalance,
+      currentDataset.monthlyInflow,
+      currentDataset.monthlyOutflow,
+      currentDataset.invoices,
+      currentDataset.payments,
+      currentDataset.transactions
+    )
+  );
+
+  const [rawInsights, setRawInsights] = useState<ActionInsight[]>(() =>
+    generateInsightsList(
+      currentDataset.currentBalance,
+      currentDataset.monthlyInflow,
+      currentDataset.monthlyOutflow,
+      currentDataset.safeBufferThreshold,
+      currentDataset.invoices,
+      currentDataset.payments,
+      currentDataset.transactions
+    )
+  );
 
   // Recalculate everything whenever dataset, scenarioParams, or forecast range changes
   useEffect(() => {
-    let isMounted = true;
     setIsLoading(true);
 
-    Promise.all([
-      apiClient.getSummary(currentDataset),
-      apiClient.getForecast(currentDataset, forecastRangeDays),
-      apiClient.getRiskPrediction(currentDataset),
-      apiClient.simulateScenario(scenarioParams, currentDataset),
-      apiClient.getInsights(currentDataset)
-    ]).then(([sum, fc, risk, sim, ins]) => {
-      if (isMounted) {
-        setSummary(sum);
-        setForecast(fc);
-        setRiskPrediction(risk);
-        setScenarioResult(sim);
-        setRawInsights(ins);
-        setIsLoading(false);
-      }
-    });
+    const newSummary = calculateSummary(
+      currentDataset.currentBalance,
+      currentDataset.monthlyInflow,
+      currentDataset.monthlyOutflow,
+      currentDataset.safeBufferThreshold,
+      currentDataset.transactions
+    );
 
-    return () => {
-      isMounted = false;
-    };
+    const newForecast = generateForecastTimeline(
+      currentDataset.currentBalance,
+      currentDataset.monthlyInflow,
+      currentDataset.monthlyOutflow,
+      currentDataset.safeBufferThreshold,
+      forecastRangeDays,
+      currentDataset.invoices,
+      currentDataset.payments,
+      scenarioParams
+    );
+
+    const newRisk = computeRiskPrediction(
+      currentDataset.currentBalance,
+      currentDataset.monthlyInflow,
+      currentDataset.monthlyOutflow,
+      currentDataset.safeBufferThreshold,
+      currentDataset.invoices,
+      currentDataset.payments,
+      scenarioParams
+    );
+
+    const newSim = runScenarioSimulation(
+      scenarioParams,
+      currentDataset.currentBalance,
+      currentDataset.monthlyInflow,
+      currentDataset.monthlyOutflow,
+      currentDataset.invoices,
+      currentDataset.payments,
+      currentDataset.transactions
+    );
+
+    const newIns = generateInsightsList(
+      currentDataset.currentBalance,
+      currentDataset.monthlyInflow,
+      currentDataset.monthlyOutflow,
+      currentDataset.safeBufferThreshold,
+      currentDataset.invoices,
+      currentDataset.payments,
+      currentDataset.transactions
+    );
+
+    setSummary(newSummary);
+    setForecast(newForecast);
+    setRiskPrediction(newRisk);
+    setScenarioResult(newSim);
+    setRawInsights(newIns);
+    setIsLoading(false);
   }, [currentDataset, forecastRangeDays, scenarioParams]);
 
   // Merged insights with applied status
@@ -209,6 +278,42 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       status: insightsState[item.id] || item.status
     }));
   }, [rawInsights, insightsState]);
+
+  const addTransaction = (txData: Omit<Transaction, 'id'>) => {
+    const newTx: Transaction = {
+      ...txData,
+      id: `tx-${Date.now().toString().slice(-4)}`
+    };
+
+    setDatasets(prev => {
+      const active = prev[currentDatasetKey];
+      const newBal = txData.type === 'income' ? active.currentBalance + txData.amount : active.currentBalance - txData.amount;
+      return {
+        ...prev,
+        [currentDatasetKey]: {
+          ...active,
+          currentBalance: Math.max(0, newBal),
+          transactions: [newTx, ...active.transactions]
+        }
+      };
+    });
+
+    showToast(`Transaction "${newTx.title}" recorded!`);
+  };
+
+  const deleteTransaction = (id: string) => {
+    setDatasets(prev => {
+      const active = prev[currentDatasetKey];
+      return {
+        ...prev,
+        [currentDatasetKey]: {
+          ...active,
+          transactions: active.transactions.filter(t => t.id !== id)
+        }
+      };
+    });
+    showToast('Transaction removed.');
+  };
 
   const addInvoice = (invoiceData: Omit<Invoice, 'id'>) => {
     const newInvoice: Invoice = {
@@ -227,7 +332,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       };
     });
 
-    showToast(`Invoice #${newInvoice.id} for $${newInvoice.amount.toLocaleString()} added successfully!`);
+    showToast(`Invoice #${newInvoice.id} added to ledger!`);
   };
 
   const addPayment = (paymentData: Omit<Payment, 'id'>) => {
@@ -247,7 +352,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       };
     });
 
-    showToast(`Payment scheduled for $${newPayment.amount.toLocaleString()} (${newPayment.vendor})!`);
+    showToast(`Payment scheduled for ${newPayment.vendor}!`);
   };
 
   const updateSafeBuffer = (newBuffer: number) => {
@@ -262,7 +367,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       };
     });
     setScenarioParams(prev => ({ ...prev, safeBufferAmount: newBuffer }));
-    showToast(`Safe Cash Buffer updated to $${newBuffer.toLocaleString()}`);
+    showToast(`Safe Cash Buffer updated to ${formatCurrency(newBuffer)}`);
   };
 
   const updateInvoiceStatus = (id: string, status: 'paid' | 'pending' | 'overdue') => {
@@ -276,12 +381,12 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
         }
       };
     });
-    showToast(`Invoice #${id} status marked as ${status.toUpperCase()}`);
+    showToast(`Invoice #${id} marked as ${status.toUpperCase()}`);
   };
 
   const applyInsightAction = (insightId: string) => {
     setInsightsState(prev => ({ ...prev, [insightId]: 'applied' }));
-    showToast('Action implemented! Recalculating cash projection impact.');
+    showToast('Protective action applied! Recalculating cash projection.');
   };
 
   const dismissInsightAction = (insightId: string) => {
@@ -299,7 +404,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       ...DEFAULT_SCENARIO_PARAMS,
       safeBufferAmount: currentDataset.safeBufferThreshold
     });
-    showToast('Scenario parameters reset to baseline.');
+    showToast('Scenario reset to baseline.');
   };
 
   return (
@@ -311,6 +416,9 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
         setDatasetKey: setCurrentDatasetKey,
         dataset: currentDataset,
         allDatasets: datasets,
+        currency,
+        setCurrency,
+        formatCurrency,
         summary,
         forecast,
         forecastRangeDays,
@@ -331,6 +439,8 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
         openInvoiceReminderModal,
         isExportModalOpen,
         setIsExportModalOpen,
+        addTransaction,
+        deleteTransaction,
         addInvoice,
         addPayment,
         updateSafeBuffer,

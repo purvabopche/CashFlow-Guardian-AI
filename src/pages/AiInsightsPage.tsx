@@ -15,7 +15,10 @@ import {
   SlidersHorizontal,
   ChevronRight,
   TrendingUp,
-  ShieldCheck
+  ShieldCheck,
+  Zap,
+  RefreshCw,
+  ShoppingBag
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useFinancial } from '../context/FinancialContext';
@@ -29,13 +32,21 @@ export const AiInsightsPage: React.FC = () => {
     dismissInsightAction,
     openInvoiceReminderModal,
     setActivePage,
+    formatCurrency,
     dataset
   } = useFinancial();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedPriority, setSelectedPriority] = useState<string>('All');
 
-  const categories = ['All', 'Receivable Management', 'Vendor Payment Timing', 'Expense Optimization', 'Liquidity & Reserves'];
+  const categories = [
+    'All',
+    'Discretionary Spending',
+    'Recurring Subscriptions',
+    'Liquidity & Reserves',
+    'Receivable Management',
+    'Vendor Payment Timing'
+  ];
 
   const filteredInsights = insights.filter((item) => {
     if (selectedCategory !== 'All' && item.category !== selectedCategory) return false;
@@ -71,14 +82,14 @@ export const AiInsightsPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              AI Financial Action Recommendations
+              AI Guardian Insights
             </h1>
             <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
-              Prescriptive Intelligence
+              Natural Language Recommendations
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Prioritized liquidity interventions to eliminate predicted shortage risks and extend operating runway.
+            Data-driven AI prescriptions to avoid projected shortage dates and optimize discretionary burn.
           </p>
         </div>
 
@@ -87,16 +98,16 @@ export const AiInsightsPage: React.FC = () => {
           className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm"
         >
           <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-          <span>Simulate Action Impact</span>
+          <span>Simulate Stress Test</span>
         </button>
       </div>
 
       {/* Aggregate Opportunities Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <MetricCard
-          title="Total Cash Buffer Unlocked"
-          value={`$${totalPotentialRecovery.toLocaleString()}`}
-          subValue="From active open recommendations"
+          title="Total Cash Cushion Unlocked"
+          value={formatCurrency(totalPotentialRecovery)}
+          subValue="From active open AI recommendations"
           icon={DollarSign}
           iconBg="bg-emerald-50"
           iconColor="text-emerald-600"
@@ -104,9 +115,9 @@ export const AiInsightsPage: React.FC = () => {
         />
 
         <MetricCard
-          title="Potential Runway Extension"
+          title="Runway Extension Opportunity"
           value={`+${totalRunwayExtensionDays} Days`}
-          subValue="Cumulative runway protection"
+          subValue="Cumulative liquidity buffer"
           icon={Clock}
           iconBg="bg-blue-50"
           iconColor="text-blue-600"
@@ -115,8 +126,8 @@ export const AiInsightsPage: React.FC = () => {
 
         <MetricCard
           title="Actionable Interventions"
-          value={`${insights.filter((i) => i.status === 'open').length} Items`}
-          subValue={`${insights.filter((i) => i.status === 'applied').length} Implemented`}
+          value={`${insights.filter((i) => i.status === 'open').length} Open`}
+          subValue={`${insights.filter((i) => i.status === 'applied').length} Implemented in forecast`}
           icon={Sparkles}
           iconBg="bg-purple-50"
           iconColor="text-purple-600"
@@ -207,7 +218,7 @@ export const AiInsightsPage: React.FC = () => {
                     <div className="flex items-center gap-4 text-xs font-semibold">
                       <div className="flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60">
                         <DollarSign className="w-3.5 h-3.5" />
-                        <span>${item.potentialCashImpact.toLocaleString()} Liquidity Impact</span>
+                        <span>{formatCurrency(item.potentialCashImpact)} Liquidity Value</span>
                       </div>
                       <div className="flex items-center gap-1 text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/60">
                         <Clock className="w-3.5 h-3.5" />
@@ -215,10 +226,10 @@ export const AiInsightsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Recommended action callout box */}
+                    {/* Prescribed Action Callout */}
                     <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 text-xs text-slate-700 space-y-1">
                       <div className="font-bold text-slate-900 flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Prescribed Action:
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Actionable Step:
                       </div>
                       <p className="text-slate-600">{item.recommendedAction}</p>
                     </div>
@@ -236,16 +247,16 @@ export const AiInsightsPage: React.FC = () => {
                                 id: tData.invoiceId || 'INV-1042',
                                 client: tData.client || 'Apex Global Logistics',
                                 amount: tData.amount || item.potentialCashImpact,
-                                dueDate: '2026-09-05',
+                                dueDate: '2026-09-06',
                                 status: 'overdue' as const,
-                                daysOverdue: tData.daysOverdue || 14
+                                daysOverdue: tData.daysOverdue || 12
                               };
                               openInvoiceReminderModal(matchingInvoice);
                             }}
                             className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold shadow-sm transition-all active:scale-95"
                           >
                             <Mail className="w-3.5 h-3.5" />
-                            <span>Launch 1-Click Reminder</span>
+                            <span>1-Click Payment Reminder</span>
                           </button>
                         )}
 

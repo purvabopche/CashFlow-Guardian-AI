@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ShieldAlert,
   LayoutDashboard,
+  Receipt,
   TrendingUp,
   AlertTriangle,
   SlidersHorizontal,
@@ -12,8 +13,8 @@ import {
   ChevronDown,
   Menu,
   X,
-  Home,
-  Check
+  Check,
+  Globe
 } from 'lucide-react';
 import { useFinancial, ActivePage } from '../../context/FinancialContext';
 
@@ -26,6 +27,9 @@ export const Navbar: React.FC = () => {
     allDatasets,
     insights,
     summary,
+    currency,
+    setCurrency,
+    formatCurrency,
     setIsAddModalOpen,
     setIsExportModalOpen,
     backendStatus
@@ -37,12 +41,12 @@ export const Navbar: React.FC = () => {
   const activeInsightsCount = insights.filter((i) => i.status === 'open').length;
 
   const navItems: { id: ActivePage; label: string; icon: React.ElementType; badge?: number }[] = [
-    { id: 'landing', label: 'Home', icon: Home },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'transactions', label: 'Transactions', icon: Receipt },
     { id: 'forecast', label: 'Forecast', icon: TrendingUp },
-    { id: 'risk', label: 'Risk Prediction', icon: AlertTriangle },
-    { id: 'simulator', label: 'Scenario Simulator', icon: SlidersHorizontal },
-    { id: 'insights', label: 'AI Insights', icon: Sparkles, badge: activeInsightsCount }
+    { id: 'insights', label: 'AI Insights', icon: Sparkles, badge: activeInsightsCount },
+    { id: 'risk', label: 'Risk Analysis', icon: AlertTriangle },
+    { id: 'simulator', label: 'What-If Simulator', icon: SlidersHorizontal }
   ];
 
   const handleNavClick = (pageId: ActivePage) => {
@@ -53,33 +57,53 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
-      {/* Top micro bar for quick business stats */}
-      <div className="hidden lg:flex items-center justify-between px-6 py-1.5 bg-slate-900 text-slate-300 text-xs font-medium border-b border-slate-800">
+      {/* Top micro status bar */}
+      <div className="hidden lg:flex items-center justify-between px-6 py-1.5 bg-slate-950 text-slate-300 text-xs font-medium border-b border-slate-800">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-slate-400">Cash Health Score:</span>
+            <span className="text-slate-400">Cash Safety Score:</span>
             <span className="font-bold text-white">{summary.cashHealthScore}/100</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">Runway:</span>
-            <span className="font-semibold text-emerald-400">{summary.runwayDays} Days</span>
+            <span className="text-slate-400">Est. Runway:</span>
+            <span className="font-semibold text-emerald-400">~{summary.runwayDays} Days</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-slate-400">30-Day Outlook:</span>
             <span className={`font-semibold ${summary.projected30DayBalance >= summary.safeBufferThreshold ? 'text-emerald-400' : 'text-rose-400'}`}>
-              ${summary.projected30DayBalance.toLocaleString()}
+              {formatCurrency(summary.projected30DayBalance)}
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-4 text-[11px]">
+          {/* Currency Switcher */}
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+            <button
+              onClick={() => setCurrency('INR')}
+              className={`px-2 py-0.5 rounded font-bold transition-all ${
+                currency === 'INR' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              ₹ INR
+            </button>
+            <button
+              onClick={() => setCurrency('USD')}
+              className={`px-2 py-0.5 rounded font-bold transition-all ${
+                currency === 'USD' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              $ USD
+            </button>
+          </div>
+
+          <span className="text-slate-700">|</span>
+
           <div className="flex items-center gap-1.5 text-slate-400">
             <span className={`h-1.5 w-1.5 rounded-full ${backendStatus.connected ? 'bg-emerald-400' : 'bg-blue-400'}`} />
-            <span>{backendStatus.connected ? 'FastAPI Connected (Port 8000)' : 'Client Simulation Engine (Active)'}</span>
+            <span>{backendStatus.connected ? 'FastAPI ML Engine (Port 8000)' : 'Client Prediction Engine (Online)'}</span>
           </div>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400">Bank Feeds: <strong className="text-slate-200">Connected (Plaid Mock)</strong></span>
         </div>
       </div>
 
@@ -89,10 +113,10 @@ export const Navbar: React.FC = () => {
           {/* Logo & Brand */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => handleNavClick('landing')}
+              onClick={() => handleNavClick('dashboard')}
               className="flex items-center gap-2.5 text-left group focus:outline-none"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-slate-900 via-fintech-navy to-emerald-700 text-emerald-400 shadow-md group-hover:scale-105 transition-transform">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-slate-950 via-fintech-navy to-emerald-700 text-emerald-400 shadow-md group-hover:scale-105 transition-transform">
                 <ShieldAlert className="w-5 h-5" />
               </div>
               <div>
@@ -102,7 +126,7 @@ export const Navbar: React.FC = () => {
                     AI
                   </span>
                 </span>
-                <span className="text-[11px] text-slate-500 block -mt-0.5">Early Shortage Risk Intelligence</span>
+                <span className="text-[11px] text-slate-500 block -mt-0.5">Predictive Liquidity Intelligence</span>
               </div>
             </button>
 
@@ -120,7 +144,7 @@ export const Navbar: React.FC = () => {
               {isCompanyDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1.5 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-50 animate-fade-in">
                   <div className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Switch Demo Business Preset
+                    Switch Profile Dataset
                   </div>
                   {Object.values(allDatasets).map((ds) => (
                     <button
@@ -146,7 +170,7 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Desktop Navigation Tabs */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activePage === item.id;
@@ -180,7 +204,7 @@ export const Navbar: React.FC = () => {
           <div className="hidden sm:flex items-center gap-2">
             <button
               onClick={() => setIsExportModalOpen(true)}
-              title="Export Financial Forecast & Analysis"
+              title="Export Financial Briefing"
               className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition-all"
             >
               <Download className="w-3.5 h-3.5 text-slate-500" />
@@ -197,7 +221,15 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile menu toggle button */}
-          <div className="flex md:hidden items-center gap-2">
+          <div className="flex lg:hidden items-center gap-2">
+            {/* Mobile Currency toggle */}
+            <button
+              onClick={() => setCurrency(currency === 'INR' ? 'USD' : 'INR')}
+              className="px-2 py-1 rounded-lg bg-slate-100 text-xs font-bold text-slate-700"
+            >
+              {currency === 'INR' ? '₹' : '$'}
+            </button>
+
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="p-2 rounded-lg bg-emerald-600 text-white"
@@ -217,10 +249,10 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-3 animate-fade-in shadow-xl">
+        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-3 animate-fade-in shadow-xl">
           {/* Preset switch in mobile */}
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-            <div className="text-[11px] font-bold text-slate-500 mb-1.5 uppercase">Business Profile</div>
+            <div className="text-[11px] font-bold text-slate-500 mb-1.5 uppercase">Profile Dataset</div>
             <div className="grid grid-cols-1 gap-1">
               {Object.values(allDatasets).map((ds) => (
                 <button
@@ -272,7 +304,7 @@ export const Navbar: React.FC = () => {
               className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-700"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Export Report</span>
+              <span>Export Briefing</span>
             </button>
           </div>
         </div>

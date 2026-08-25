@@ -31,7 +31,7 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { MetricCard } from '../components/common/MetricCard';
 
 export const RiskPredictionPage: React.FC = () => {
-  const { riskPrediction, summary, dataset, setActivePage, backendStatus } = useFinancial();
+  const { riskPrediction, summary, formatCurrency, setActivePage, backendStatus } = useFinancial();
 
   // Explainable AI chart data
   const xaiChartData = riskPrediction.explainability.map((item) => ({
@@ -51,7 +51,7 @@ export const RiskPredictionPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Cash Shortage Risk & Explainable AI
+              Cash Shortage Risk Analysis & XAI
             </h1>
             <span className="rounded-md bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-800 border border-purple-200">
               ML Inference Pipeline
@@ -90,25 +90,25 @@ export const RiskPredictionPage: React.FC = () => {
                 Machine Learning Architecture & XAI Readiness
               </span>
               <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-mono text-slate-300">
-                {backendStatus.connected ? 'FastAPI Backend Live' : 'Calibrated Decision Rules Engine'}
+                {backendStatus.connected ? 'FastAPI Backend Connected' : 'Calibrated Local Decision Rules'}
               </span>
             </div>
             <h3 className="text-lg font-bold text-white tracking-tight">
               Explainable Ensemble Liquidity Survival Model
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              This pipeline analyzes 18+ high-dimensional features including receivable aging latency, non-deferrable payroll concentration, variance in revenue velocity, and buffer coverage ratio to predict cash insolvencies before they materialize.
+              This pipeline analyzes 18+ high-dimensional features including receivable aging latency, fixed rent/payroll concentration, variance in revenue velocity, and buffer coverage ratio to predict cash insolvencies before they materialize.
             </p>
           </div>
 
           <div className="lg:col-span-4 rounded-xl bg-white/5 border border-white/10 p-4 text-xs space-y-2">
             <div className="flex justify-between text-slate-300">
               <span>Model Architecture:</span>
-              <span className="font-mono text-emerald-400 font-bold">Gradient Boosted Trees</span>
+              <span className="font-mono text-emerald-400 font-bold">Gradient Boosted Survival Trees</span>
             </div>
             <div className="flex justify-between text-slate-300">
               <span>Explainability Framework:</span>
-              <span className="font-mono text-emerald-400 font-bold">SHAP Attribution</span>
+              <span className="font-mono text-emerald-400 font-bold">SHAP Feature Attribution</span>
             </div>
             <div className="flex justify-between text-slate-300">
               <span>Confidence Threshold:</span>
@@ -129,19 +129,19 @@ export const RiskPredictionPage: React.FC = () => {
             </div>
 
             <div className="flex items-baseline gap-2">
-              <span className={`text-4xl lg:text-5xl font-black tracking-tight ${riskPrediction.riskProbability >= 70 ? 'text-rose-600' : riskPrediction.riskProbability >= 40 ? 'text-amber-600' : 'text-emerald-600'}`}>
+              <span className={`text-4xl lg:text-5xl font-black tracking-tight ${riskPrediction.riskProbability >= 65 ? 'text-rose-600' : riskPrediction.riskProbability >= 35 ? 'text-amber-600' : 'text-emerald-600'}`}>
                 {riskPrediction.riskProbability}%
               </span>
-              <span className="text-xs font-semibold text-slate-400">Probability of Cash Squeeze</span>
+              <span className="text-xs font-semibold text-slate-400">Shortage Probability</span>
             </div>
 
             {/* Visual Probability Bar */}
             <div className="mt-4 w-full h-3 rounded-full bg-slate-100 overflow-hidden">
               <div
                 className={`h-full transition-all duration-500 ${
-                  riskPrediction.riskProbability >= 70
+                  riskPrediction.riskProbability >= 65
                     ? 'bg-rose-500'
-                    : riskPrediction.riskProbability >= 40
+                    : riskPrediction.riskProbability >= 35
                     ? 'bg-amber-500'
                     : 'bg-emerald-500'
                 }`}
@@ -175,8 +175,8 @@ export const RiskPredictionPage: React.FC = () => {
           </div>
 
           <div className="mt-6 pt-3 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
-            <span>Earliest Buffer Breach:</span>
-            <strong className="text-rose-600 font-semibold">Day 14 (Payroll Run)</strong>
+            <span>Earliest Deficit Breach:</span>
+            <strong className="text-rose-600 font-semibold">{summary.dangerDate || 'Day 12'}</strong>
           </div>
         </div>
 

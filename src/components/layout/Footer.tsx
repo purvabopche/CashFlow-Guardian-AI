@@ -20,7 +20,7 @@ export const Footer: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Predicting small and medium business cash shortages before they become insolvency crises through explainable AI and dynamic scenario modeling.
+              Predicting small business, freelancer, and individual cash shortages before they become crises through explainable AI and dynamic scenario modeling.
             </p>
             <div className="pt-1 flex items-center gap-2">
               <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -40,23 +40,28 @@ export const Footer: React.FC = () => {
                 </button>
               </li>
               <li>
+                <button onClick={() => setActivePage('transactions')} className="hover:text-emerald-600 transition-colors">
+                  Transactions Ledger
+                </button>
+              </li>
+              <li>
                 <button onClick={() => setActivePage('forecast')} className="hover:text-emerald-600 transition-colors">
                   Cash Flow Forecast
                 </button>
               </li>
               <li>
+                <button onClick={() => setActivePage('insights')} className="hover:text-emerald-600 transition-colors">
+                  AI Guardian Insights
+                </button>
+              </li>
+              <li>
                 <button onClick={() => setActivePage('risk')} className="hover:text-emerald-600 transition-colors">
-                  Shortage Risk (ML & XAI)
+                  Shortage Risk Analysis
                 </button>
               </li>
               <li>
                 <button onClick={() => setActivePage('simulator')} className="hover:text-emerald-600 transition-colors">
                   What-If Scenario Simulator
-                </button>
-              </li>
-              <li>
-                <button onClick={() => setActivePage('insights')} className="hover:text-emerald-600 transition-colors">
-                  AI Actionable Recommendations
                 </button>
               </li>
             </ul>
@@ -97,12 +102,12 @@ export const Footer: React.FC = () => {
 
         <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
           <div>
-            © {new Date().getFullYear()} CashFlow Guardian AI. Developed for SME Financial Health & Resilience.
+            © {new Date().getFullYear()} CashFlow Guardian AI. Developed for SME & Individual Liquidity Intelligence.
           </div>
           <div className="flex items-center gap-4">
             <span>Model Transparency: Calibrated Heuristic & ML Stubs</span>
             <span>•</span>
-            <span>Security: Plaid Bank Encryption Compatible</span>
+            <span>Security: Bank-Grade Encryption Standard</span>
           </div>
         </div>
       </div>

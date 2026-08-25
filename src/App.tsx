@@ -2,8 +2,8 @@ import React from 'react';
 import { FinancialProvider, useFinancial } from './context/FinancialContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
-import { LandingPage } from './pages/LandingPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { TransactionsPage } from './pages/TransactionsPage';
 import { ForecastPage } from './pages/ForecastPage';
 import { RiskPredictionPage } from './pages/RiskPredictionPage';
 import { ScenarioSimulatorPage } from './pages/ScenarioSimulatorPage';
@@ -18,17 +18,17 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-emerald-500 selection:text-white">
-      {/* Top Navigation */}
+      {/* Top Navigation Bar with Currency & Preset Switchers */}
       <Navbar />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
-        {activePage === 'landing' && <LandingPage />}
         {activePage === 'dashboard' && <DashboardPage />}
+        {activePage === 'transactions' && <TransactionsPage />}
         {activePage === 'forecast' && <ForecastPage />}
+        {activePage === 'insights' && <AiInsightsPage />}
         {activePage === 'risk' && <RiskPredictionPage />}
         {activePage === 'simulator' && <ScenarioSimulatorPage />}
-        {activePage === 'insights' && <AiInsightsPage />}
       </main>
 
       {/* Global Toast Notification */}
