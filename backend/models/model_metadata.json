@@ -1,0 +1,162 @@
+{
+  "model_name": "CashFlow Guardian Multi-Horizon ML Ensemble",
+  "model_version": "2.2.0",
+  "classifier_type": "RandomForestClassifier (140 Trees, Max Depth 9)",
+  "regressor_balance_type": "GradientBoostingRegressor (120 Estimators, Depth 5)",
+  "regressor_days_type": "GradientBoostingRegressor (100 Estimators, Depth 4)",
+  "training_date": "2026-08-26 01:09:56",
+  "dataset_size": 5000,
+  "number_of_features": 16,
+  "train_test_split": "80/20 Stratified",
+  "features": [
+    "current_balance",
+    "average_daily_income",
+    "average_daily_expense",
+    "income_volatility",
+    "expense_volatility",
+    "upcoming_payment_amount",
+    "upcoming_payment_count",
+    "expected_receivables",
+    "overdue_receivables",
+    "recurring_expense_ratio",
+    "discretionary_spending",
+    "recent_cash_burn_rate",
+    "days_until_next_major_payment",
+    "historical_min_balance",
+    "transaction_frequency",
+    "month_day"
+  ],
+  "metrics": {
+    "classification": {
+      "accuracy": 0.945,
+      "precision": 0.9054,
+      "recall": 0.9349,
+      "f1_score": 0.9199,
+      "roc_auc": 0.9881
+    },
+    "regression_balance": {
+      "mae": 5316.97,
+      "rmse": 7593.28,
+      "r2": 0.9946
+    },
+    "regression_days": {
+      "mae": 2.38,
+      "rmse": 4.16,
+      "r2": 0.8743
+    }
+  },
+  "feature_importances": [
+    {
+      "feature": "current_balance",
+      "importance": 29.79,
+      "correlation_with_risk": -0.5574,
+      "direction": "decreases_risk",
+      "readable_name": "Current Balance"
+    },
+    {
+      "feature": "historical_min_balance",
+      "importance": 21.29,
+      "correlation_with_risk": -0.5347,
+      "direction": "decreases_risk",
+      "readable_name": "Historical Min Balance"
+    },
+    {
+      "feature": "upcoming_payment_amount",
+      "importance": 7.3,
+      "correlation_with_risk": -0.0016,
+      "direction": "decreases_risk",
+      "readable_name": "Upcoming Payment Amount"
+    },
+    {
+      "feature": "average_daily_income",
+      "importance": 6.82,
+      "correlation_with_risk": -0.4458,
+      "direction": "decreases_risk",
+      "readable_name": "Average Daily Income"
+    },
+    {
+      "feature": "recent_cash_burn_rate",
+      "importance": 6.08,
+      "correlation_with_risk": 0.2147,
+      "direction": "increases_risk",
+      "readable_name": "Recent Cash Burn Rate"
+    },
+    {
+      "feature": "average_daily_expense",
+      "importance": 5.48,
+      "correlation_with_risk": -0.182,
+      "direction": "decreases_risk",
+      "readable_name": "Average Daily Expense"
+    },
+    {
+      "feature": "income_volatility",
+      "importance": 4.58,
+      "correlation_with_risk": 0.334,
+      "direction": "increases_risk",
+      "readable_name": "Income Volatility"
+    },
+    {
+      "feature": "expected_receivables",
+      "importance": 4.25,
+      "correlation_with_risk": -0.3796,
+      "direction": "decreases_risk",
+      "readable_name": "Expected Receivables"
+    },
+    {
+      "feature": "expense_volatility",
+      "importance": 3.23,
+      "correlation_with_risk": 0.3402,
+      "direction": "increases_risk",
+      "readable_name": "Expense Volatility"
+    },
+    {
+      "feature": "days_until_next_major_payment",
+      "importance": 3.18,
+      "correlation_with_risk": 0.0353,
+      "direction": "increases_risk",
+      "readable_name": "Days Until Next Major Payment"
+    },
+    {
+      "feature": "transaction_frequency",
+      "importance": 2.08,
+      "correlation_with_risk": -0.2192,
+      "direction": "decreases_risk",
+      "readable_name": "Transaction Frequency"
+    },
+    {
+      "feature": "overdue_receivables",
+      "importance": 2.0,
+      "correlation_with_risk": 0.2057,
+      "direction": "increases_risk",
+      "readable_name": "Overdue Receivables"
+    },
+    {
+      "feature": "recurring_expense_ratio",
+      "importance": 1.4,
+      "correlation_with_risk": -0.0112,
+      "direction": "decreases_risk",
+      "readable_name": "Recurring Expense Ratio"
+    },
+    {
+      "feature": "discretionary_spending",
+      "importance": 1.26,
+      "correlation_with_risk": -0.1038,
+      "direction": "decreases_risk",
+      "readable_name": "Discretionary Spending"
+    },
+    {
+      "feature": "month_day",
+      "importance": 0.77,
+      "correlation_with_risk": 0.0046,
+      "direction": "increases_risk",
+      "readable_name": "Month Day"
+    },
+    {
+      "feature": "upcoming_payment_count",
+      "importance": 0.49,
+      "correlation_with_risk": -0.1339,
+      "direction": "decreases_risk",
+      "readable_name": "Upcoming Payment Count"
+    }
+  ]
+}

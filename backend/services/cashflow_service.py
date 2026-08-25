@@ -27,16 +27,8 @@ class CashFlowService:
         monthly_outflow: float,
         invoices: List[Dict[str, Any]],
         transactions: List[Dict[str, Any]],
-        shortage_prob: float
+        shortage_prob_pct: float
     ) -> SafetyScoreBreakdown:
-        """
-        Computes an explainable 0-100 Cash Safety Score with transparent sub-score components:
-        - Liquidity Health (30 pts)
-        - Income Stability (25 pts)
-        - Expense Pressure (20 pts)
-        - Receivables Health (15 pts)
-        - Shortage Risk Margin (10 pts)
-        """
         # 1. Liquidity Health (30 pts max)
         buffer_ratio = current_balance / max(safe_buffer, 1.0)
         if buffer_ratio >= 2.5:
@@ -88,11 +80,11 @@ class CashFlowService:
             rec = 3
 
         # 5. Shortage Risk Margin (10 pts max)
-        if shortage_prob <= 15.0:
+        if shortage_prob_pct <= 15.0:
             srm = 10
-        elif shortage_prob <= 35.0:
+        elif shortage_prob_pct <= 35.0:
             srm = 8
-        elif shortage_prob <= 65.0:
+        elif shortage_prob_pct <= 65.0:
             srm = 5
         else:
             srm = 2
@@ -116,29 +108,22 @@ class CashFlowService:
         payments = scenario_data.get("payments", [])
         transactions = scenario_data.get("transactions", [])
 
-        # Run ML inference
-        feats = self.ml_model.extract_features(current_balance, safe_buffer, transactions, invoices, payments)
+        # Run real ML inference
+        feats = self.ml_model.extract_features_from_state(current_balance, safe_buffer, transactions, invoices, payments)
         pred = self.ml_model.predict(feats)
 
-        shortage_prob = pred["shortage_probability"]
-        risk_level = pred["risk_level"]
+        shortage_prob = pred["shortage_probability_pct"]
+        risk_level = "Critical" if pred["risk_level"] in ["CRITICAL", "Critical"] else "High" if pred["risk_level"] in ["HIGH", "High"] else "Medium" if pred["risk_level"] in ["MEDIUM", "Medium"] else "Low"
 
         net_cash_flow = monthly_inflow - monthly_outflow
         net_burn = max(0.0, monthly_outflow - monthly_inflow)
         daily_burn = net_burn / 30.0
         runway_days = int(current_balance / daily_burn) if daily_burn > 0 else 180
 
-        # Dynamic danger date calculation
-        danger_days_from_now = 12
-        danger_date = None
+        danger_days_from_now = pred["estimated_shortage_day"]
         now = datetime.datetime.now()
-
-        if shortage_prob >= 35.0 or current_balance < safe_buffer * 1.3:
-            depletion_rate = daily_burn if daily_burn > 0 else (monthly_outflow * 0.4) / 15.0
-            days_to_deficit = max(3, min(24, int((current_balance - safe_buffer * 0.8) / max(depletion_rate, 350.0))))
-            danger_days_from_now = days_to_deficit
-            target_dt = now + datetime.timedelta(days=days_to_deficit)
-            danger_date = target_dt.strftime("%b %d")
+        target_dt = now + datetime.timedelta(days=danger_days_from_now)
+        danger_date = target_dt.strftime("%b %d") if shortage_prob >= 35.0 else None
 
         score_breakdown = self.compute_safety_score(
             current_balance, safe_buffer, monthly_inflow, monthly_outflow, invoices, transactions, shortage_prob
@@ -149,7 +134,7 @@ class CashFlowService:
             monthly_inflow=monthly_inflow,
             monthly_outflow=monthly_outflow,
             net_cash_flow=net_cash_flow,
-            projected_30d_balance=pred["predicted_balance_30d"],
+            projected_30d_balance=pred["predicted_minimum_balance"],
             cash_safety_score=score_breakdown.total_score,
             safety_score_breakdown=score_breakdown,
             safe_buffer_threshold=safe_buffer,
@@ -286,11 +271,11 @@ class CashFlowService:
         payments = scenario_data.get("payments", [])
         transactions = scenario_data.get("transactions", [])
 
-        feats = self.ml_model.extract_features(current_balance, safe_buffer, transactions, invoices, payments)
+        feats = self.ml_model.extract_features_from_state(current_balance, safe_buffer, transactions, invoices, payments)
         pred = self.ml_model.predict(feats)
 
-        shortage_prob = pred["shortage_probability"]
-        risk_level = pred["risk_level"]
+        shortage_prob = pred["shortage_probability_pct"]
+        risk_level = "Critical" if pred["risk_level"] in ["CRITICAL", "Critical"] else "High" if pred["risk_level"] in ["HIGH", "High"] else "Medium" if pred["risk_level"] in ["MEDIUM", "Medium"] else "Low"
 
         overdue_sum = sum(i["amount"] for i in invoices if i.get("status") == "overdue")
         critical_pay = sum(p["amount"] for p in payments if p.get("urgency") in ["Critical", "High"])
@@ -338,18 +323,13 @@ class CashFlowService:
             )
         ]
 
-        if shortage_prob >= 72.0:
-            window = "Days 12 – 18 (Immediate Cash Deficit Window)"
-        elif shortage_prob >= 48.0:
-            window = "Days 20 – 28 (Mid-to-End Month Pressure)"
-        else:
-            window = "No critical shortage predicted in next 60 days"
+        window = f"Day {pred['estimated_shortage_day']} (Projected lowest: ₹{int(pred['predicted_minimum_balance']):,})" if shortage_prob >= 35.0 else "No critical shortage predicted in next 60 days"
 
         return RiskAnalysisResponse(
             risk_probability=shortage_prob,
             risk_level=risk_level,
             predicted_shortage_window=window,
-            confidence_score=89.4,
+            confidence_score=round(pred["confidence"] * 100, 1),
             runway_days=int(current_balance / max(1.0, (monthly_outflow - monthly_inflow) / 30.0)) if monthly_outflow > monthly_inflow else 180,
             key_factors=[
                 f"Uncollected overdue client invoices total ₹{int(overdue_sum):,}",
@@ -357,13 +337,7 @@ class CashFlowService:
                 f"Cash reserve coverage is at {int((current_balance / max(1.0, safe_buffer)) * 100)}% of target threshold"
             ],
             explainability=explainability,
-            model_metadata={
-                "model_version": "v2.1.0-gradient-boosted-survival",
-                "model_type": "Gradient Boosted Classifier + Ridge Regressor",
-                "features_evaluated": 15,
-                "inference_latency_ms": 12.8,
-                "status": "trained_and_serialized"
-            }
+            model_metadata=self.ml_model.metadata
         )
 
     def get_insights(self, scenario_data: Dict[str, Any]) -> List[ActionInsightItem]:
@@ -375,13 +349,13 @@ class CashFlowService:
         payments = scenario_data.get("payments", [])
         transactions = scenario_data.get("transactions", [])
 
-        feats = self.ml_model.extract_features(current_balance, safe_buffer, transactions, invoices, payments)
+        feats = self.ml_model.extract_features_from_state(current_balance, safe_buffer, transactions, invoices, payments)
         pred = self.ml_model.predict(feats)
-        base_prob = pred["shortage_probability"]
+        base_prob = pred["shortage_probability_pct"]
 
         insights: List[ActionInsightItem] = []
 
-        # 1. Vendor Payment Rescheduling (Primary action)
+        # 1. Vendor Payment Rescheduling
         flex_p = next((p for p in payments if p.get("is_flexible") or p.get("urgency") == "High"), payments[0] if payments else None)
         if flex_p:
             insights.append(ActionInsightItem(
@@ -450,22 +424,21 @@ class CashFlowService:
         payments = scenario_data.get("payments", [])
         transactions = scenario_data.get("transactions", [])
 
-        # 1. Baseline calculation
-        base_feats = self.ml_model.extract_features(current_balance, safe_buffer, transactions, invoices, payments)
+        # Baseline calculation
+        base_feats = self.ml_model.extract_features_from_state(current_balance, safe_buffer, transactions, invoices, payments)
         base_pred = self.ml_model.predict(base_feats)
-        base_prob = base_pred["shortage_probability"]
+        base_prob = base_pred["shortage_probability_pct"]
 
         base_summary = self.get_dashboard_summary(scenario_data)
         base_score = base_summary.cash_safety_score
         base_runway = base_summary.runway_days
 
-        # 2. Simulated calculation
+        # Simulated calculation
         sim_balance = current_balance + req.emergency_funding_amount
         daily_saving = (monthly_outflow * 0.22 * (req.food_expense_reduction_percent / 100.0)) / 30.0 + req.daily_discretionary_trim
         sim_outflow = max(100.0, monthly_outflow - (daily_saving * 30.0))
 
-        sim_feats = self.ml_model.extract_features(sim_balance, safe_buffer, transactions, invoices, payments)
-        # Adjust probability for simulated inputs
+        sim_feats = self.ml_model.extract_features_from_state(sim_balance, safe_buffer, transactions, invoices, payments)
         mitigation_credit = (req.emergency_funding_amount / max(1.0, safe_buffer)) * 25.0 + (req.food_expense_reduction_percent * 0.35) + (8.0 if req.daily_discretionary_trim > 0 else 0.0)
         delay_penalty = req.customer_payment_delay_days * 1.2 + (req.extra_spending_this_week / max(1.0, safe_buffer)) * 18.0
 
@@ -491,7 +464,6 @@ class CashFlowService:
             d_in_sim = d_in_base
             d_out_sim = (sim_outflow / 30.0)
 
-            # Apply extra spending on days 1-5
             if d < 5 and req.extra_spending_this_week > 0:
                 d_out_sim += (req.extra_spending_this_week / 5.0)
 
