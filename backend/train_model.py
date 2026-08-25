@@ -17,25 +17,27 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, "data", "cashflow_dataset.csv")
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 METADATA_PATH = os.path.join(MODELS_DIR, "model_metadata.json")
+METRICS_PATH = os.path.join(MODELS_DIR, "model_metrics.json")
 
 def train_and_evaluate_all():
     print("==================================================================")
     print("      CashFlow Guardian AI - Machine Learning Training Pipeline   ")
     print("==================================================================")
 
-    # 1. Regenerate realistic dataset
+    # 1. Dataset Generation
     print(f"[*] Generating realistic financial cash-flow dataset (5,000 records)...")
     df = generate_cashflow_dataset(n_samples=5000, random_seed=42)
     save_dataset_csv(df, DATA_PATH)
 
     print(f"[+] Dataset shape: {df.shape} | Columns: {len(df.columns)}")
+    print(f"[+] Features: {FEATURE_COLUMNS}")
 
-    # 2. Unified Train / Test Split (80% Train, 20% Test)
-    train_df, test_df = train_test_split(df, test_size=0.2, random_state=42, stratify=df["shortage_risk"])
+    # 2. Train / Test Split (80% Train, 20% Test)
+    train_df, test_df = train_test_split(df, test_size=0.2, random_state=42, stratify=df["cash_shortage_risk"])
     X_train = train_df[FEATURE_COLUMNS]
     X_test = test_df[FEATURE_COLUMNS]
-    y_c_train = train_df["shortage_risk"]
-    y_c_test = test_df["shortage_risk"]
+    y_c_train = train_df["cash_shortage_risk"]
+    y_c_test = test_df["cash_shortage_risk"]
     y_b_train = train_df["predicted_minimum_balance"]
     y_b_test = test_df["predicted_minimum_balance"]
     y_d_train = train_df["days_to_cash_shortage"]
@@ -43,10 +45,10 @@ def train_and_evaluate_all():
 
     print(f"[+] Train samples: {len(X_train)} | Test samples: {len(X_test)}")
 
-    # 3. Train Classification Model (Cash Shortage Risk)
-    print("\n[*] Training Shortage Risk Classification Model (RandomForestClassifier)...")
+    # 3. Train Cash Shortage Classifier
+    print("\n[*] Training Cash Shortage Classifier (RandomForestClassifier)...")
     clf = RandomForestClassifier(
-        n_estimators=140,
+        n_estimators=150,
         max_depth=9,
         min_samples_split=3,
         random_state=42,
@@ -69,7 +71,7 @@ def train_and_evaluate_all():
     print(f"    -> F1 Score  : {f1:.4f}")
     print(f"    -> ROC-AUC   : {roc_auc:.4f}")
 
-    # 4. Train Regression Model 1 (Predicted Minimum Balance in 30 Days)
+    # 4. Train Minimum Balance Regressor
     print("\n[*] Training Minimum Balance Regressor (GradientBoostingRegressor)...")
     reg_bal = GradientBoostingRegressor(
         n_estimators=120,
@@ -88,7 +90,7 @@ def train_and_evaluate_all():
     print(f"    -> RMSE      : INR {rmse_bal:,.2f}")
     print(f"    -> R2 Score  : {r2_bal:.4f}")
 
-    # 5. Train Regression Model 2 (Days Until Cash Shortage)
+    # 5. Train Days to Shortage Regressor
     print("\n[*] Training Days to Shortage Regressor (GradientBoostingRegressor)...")
     reg_days = GradientBoostingRegressor(
         n_estimators=100,
@@ -107,13 +109,13 @@ def train_and_evaluate_all():
     print(f"    -> RMSE      : {rmse_days:.2f} days")
     print(f"    -> R2 Score  : {r2_days:.4f}")
 
-    # 6. Extract Feature Importances & Directional Impacts
+    # 6. Extract Feature Importances & Directional Attributions
     importances = clf.feature_importances_
     corr_matrix = df.corr(numeric_only=True)
     feature_insights = []
 
     for name, imp in zip(FEATURE_COLUMNS, importances):
-        corr = corr_matrix["shortage_risk"].get(name, 0.0)
+        corr = corr_matrix["cash_shortage_risk"].get(name, 0.0)
         direction = "increases_risk" if corr > 0 else "decreases_risk"
         feature_insights.append({
             "feature": name,
@@ -141,34 +143,27 @@ def train_and_evaluate_all():
 
     # 8. Save Metadata JSON
     metadata = {
-        "model_name": "CashFlow Guardian Multi-Horizon ML Ensemble",
-        "model_version": "2.2.0",
-        "classifier_type": "RandomForestClassifier (140 Trees, Max Depth 9)",
+        "model_name": "Random Forest Cash Shortage Classifier",
+        "model_version": "2.3.0",
+        "classifier_type": "RandomForestClassifier (150 Trees, Depth 9)",
         "regressor_balance_type": "GradientBoostingRegressor (120 Estimators, Depth 5)",
         "regressor_days_type": "GradientBoostingRegressor (100 Estimators, Depth 4)",
         "training_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "training_samples": len(X_train),
+        "test_samples": len(X_test),
         "dataset_size": len(df),
-        "number_of_features": len(FEATURE_COLUMNS),
+        "feature_count": len(FEATURE_COLUMNS),
         "train_test_split": "80/20 Stratified",
         "features": FEATURE_COLUMNS,
         "metrics": {
-            "classification": {
-                "accuracy": round(acc, 4),
-                "precision": round(prec, 4),
-                "recall": round(rec, 4),
-                "f1_score": round(f1, 4),
-                "roc_auc": round(roc_auc, 4)
-            },
-            "regression_balance": {
-                "mae": round(mae_bal, 2),
-                "rmse": round(rmse_bal, 2),
-                "r2": round(r2_bal, 4)
-            },
-            "regression_days": {
-                "mae": round(mae_days, 2),
-                "rmse": round(rmse_days, 2),
-                "r2": round(r2_days, 4)
-            }
+            "accuracy": round(acc, 4),
+            "precision": round(prec, 4),
+            "recall": round(rec, 4),
+            "f1_score": round(f1, 4),
+            "roc_auc": round(roc_auc, 4),
+            "min_balance_r2": round(r2_bal, 4),
+            "min_balance_mae": round(mae_bal, 2),
+            "days_to_shortage_mae": round(mae_days, 2)
         },
         "feature_importances": feature_insights
     }
@@ -176,7 +171,11 @@ def train_and_evaluate_all():
     with open(METADATA_PATH, "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
 
+    with open(METRICS_PATH, "w", encoding="utf-8") as f:
+        json.dump(metadata["metrics"], f, indent=2)
+
     print(f"[+] Saved model metadata to: {METADATA_PATH}")
+    print(f"[+] Saved evaluation metrics to: {METRICS_PATH}")
     print("==================================================================")
     print("       Model Training Pipeline Completed Successfully [OK]       ")
     print("==================================================================")

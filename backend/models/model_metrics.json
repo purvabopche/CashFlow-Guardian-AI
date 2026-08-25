@@ -1,0 +1,10 @@
+{
+  "accuracy": 0.981,
+  "precision": 0.9777,
+  "recall": 0.9752,
+  "f1_score": 0.9765,
+  "roc_auc": 0.9987,
+  "min_balance_r2": 0.9992,
+  "min_balance_mae": 2314.43,
+  "days_to_shortage_mae": 1.02
+}

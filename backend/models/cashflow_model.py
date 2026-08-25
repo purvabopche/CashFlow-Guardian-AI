@@ -14,7 +14,7 @@ METADATA_PATH = os.path.join(MODELS_DIR, "model_metadata.json")
 class CashFlowRiskEnsemble:
     """
     Trained Production Ensemble:
-    - RandomForestClassifier (Shortage probability & risk class)
+    - RandomForestClassifier (Shortage risk classification & probability)
     - GradientBoostingRegressor (30-day minimum balance)
     - GradientBoostingRegressor (Days until shortage)
     """
@@ -48,46 +48,34 @@ class CashFlowRiskEnsemble:
         inflows = [t['amount'] for t in transactions if t.get('type') == 'income']
         outflows = [t['amount'] for t in transactions if t.get('type') == 'expense']
 
-        avg_daily_in = float(np.mean(inflows)) if inflows else max(100.0, current_balance * 0.04)
-        avg_daily_out = float(np.mean(outflows)) if outflows else max(100.0, current_balance * 0.045)
+        daily_in = float(np.mean(inflows)) if inflows else max(100.0, current_balance * 0.04)
+        daily_out = float(np.mean(outflows)) if outflows else max(100.0, current_balance * 0.045)
 
-        in_vol = float(np.std(inflows) / (avg_daily_in + 1e-5)) if len(inflows) > 2 else 0.25
-        out_vol = float(np.std(outflows) / (avg_daily_out + 1e-5)) if len(outflows) > 2 else 0.20
-
+        rec_pay_amt = float(sum(p.get('amount', 0.0) for p in payments if not p.get('is_flexible')))
         upcoming_pay_amt = float(sum(p.get('amount', 0.0) for p in payments))
-        upcoming_pay_cnt = len(payments)
-        days_to_pay = 12
 
-        exp_rec = float(sum(i.get('amount', 0.0) for i in invoices if i.get('status') == 'pending'))
-        overdue_rec = float(sum(i.get('amount', 0.0) for i in invoices if i.get('status') == 'overdue'))
-
-        rec_exp = sum(t['amount'] for t in transactions if t.get('type') == 'expense' and t.get('is_recurring'))
-        tot_exp = sum(outflows) if outflows else 1.0
-        rec_ratio = float(rec_exp / max(tot_exp, 1.0))
+        exp_inv_amt = float(sum(i.get('amount', 0.0) for i in invoices if i.get('status') == 'pending'))
+        overdue_inv_amt = float(sum(i.get('amount', 0.0) for i in invoices if i.get('status') == 'overdue'))
 
         disc_spend = float(sum(t['amount'] for t in transactions if t.get('type') == 'expense' and t.get('is_discretionary')))
-        recent_burn = float(max(0.0, avg_daily_out * 30 - avg_daily_in * 30))
-        hist_min = float(max(0.0, current_balance * 0.65))
-        tx_freq = float(len(transactions) / 30.0) if len(transactions) > 0 else 3.0
-        month_day = 15
+        day_of_month = 15
+
+        cf_7d = (daily_in * 7) - (daily_out * 7) - (upcoming_pay_amt * 0.4) + (exp_inv_amt * 0.2)
+        cf_30d = (daily_in * 30) - (daily_out * 30) - rec_pay_amt - upcoming_pay_amt + exp_inv_amt - (overdue_inv_amt * 0.4)
 
         vec = [
             current_balance,
-            avg_daily_in,
-            avg_daily_out,
-            in_vol,
-            out_vol,
+            daily_in,
+            daily_out,
+            rec_pay_amt,
             upcoming_pay_amt,
-            upcoming_pay_cnt,
-            exp_rec,
-            overdue_rec,
-            rec_ratio,
+            exp_inv_amt,
+            overdue_inv_amt,
             disc_spend,
-            recent_burn,
-            days_to_pay,
-            hist_min,
-            tx_freq,
-            month_day
+            day_of_month,
+            cf_7d,
+            cf_30d,
+            safe_buffer
         ]
         return np.array(vec, dtype=float).reshape(1, -1)
 
@@ -108,11 +96,11 @@ class CashFlowRiskEnsemble:
 
         # Risk Classification
         if shortage_prob_pct >= 65.0:
-            risk_level = "CRITICAL" if shortage_prob_pct >= 80.0 else "HIGH"
+            risk_level = "Critical" if shortage_prob_pct >= 80.0 else "High"
         elif shortage_prob_pct >= 35.0:
-            risk_level = "MEDIUM"
+            risk_level = "Medium"
         else:
-            risk_level = "LOW"
+            risk_level = "Low"
 
         confidence = round(float(np.max(prob_matrix)), 2)
 
@@ -134,7 +122,7 @@ class CashFlowRiskEnsemble:
             "predicted_minimum_balance": round(pred_min_bal, 2),
             "estimated_shortage_day": est_days_int,
             "confidence": confidence,
-            "model_version": self.metadata.get("model_version", "2.2.0"),
-            "model_type": self.metadata.get("classifier_type", "RandomForestClassifier"),
-            "feature_importance": feature_importance_list[:6]
+            "model_version": self.metadata.get("model_version", "2.3.0"),
+            "model_type": self.metadata.get("model_name", "Random Forest Cash Shortage Classifier"),
+            "feature_importance": feature_importance_list[:5]
         }
