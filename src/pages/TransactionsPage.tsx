@@ -7,14 +7,9 @@ import {
   ArrowUpRight,
   RefreshCw,
   Tag,
-  Trash2,
-  PieChart as PieIcon,
-  Calendar,
-  Layers,
-  Sparkles
+  Trash2
 } from 'lucide-react';
 import { useFinancial } from '../context/FinancialContext';
-import { TransactionCategory } from '../types/financial';
 import { MetricCard } from '../components/common/MetricCard';
 
 export const TransactionsPage: React.FC = () => {
@@ -74,117 +69,109 @@ export const TransactionsPage: React.FC = () => {
     .reduce((s, t) => s + t.amount, 0);
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-200/80">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Financial Transactions
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              Transaction Ledger
             </h1>
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700 border border-slate-200">
-              {transactions.length} Records
+            <span className="text-xs font-mono text-slate-400">
+              • {transactions.length} entries
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Historical income entries, fixed recurring bills, and discretionary spending streams.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Operational cash ledger with automated categorization and discretionary tagging.
           </p>
         </div>
 
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-xs font-bold shadow-sm shadow-emerald-600/20 transition-all active:scale-95"
+          className="flex items-center gap-1.5 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-all active:scale-95 self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>Add Transaction</span>
         </button>
       </div>
 
       {/* Summary KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricCard
-          title="Total Recorded Income"
+          title="Recorded Income"
           value={formatCurrency(totalIncome)}
-          subValue="Client retainers & payouts"
+          subValue="Retainers & deposits"
           icon={ArrowDownLeft}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-600"
         />
 
         <MetricCard
-          title="Total Recorded Outflows"
+          title="Recorded Outflows"
           value={formatCurrency(totalExpense)}
-          subValue="Operating expenses & bills"
+          subValue="Operating burn & bills"
           icon={ArrowUpRight}
-          iconBg="bg-rose-50"
-          iconColor="text-rose-600"
         />
 
         <MetricCard
-          title="Fixed Recurring Total"
+          title="Recurring Subscriptions"
           value={formatCurrency(recurringTotal)}
-          subValue={`${Math.round((recurringTotal / Math.max(totalExpense, 1)) * 100)}% of total outflows`}
+          subValue={`${Math.round((recurringTotal / Math.max(totalExpense, 1)) * 100)}% of outflow`}
           icon={RefreshCw}
-          iconBg="bg-purple-50"
-          iconColor="text-purple-600"
         />
 
         <MetricCard
           title="Discretionary Spend"
           value={formatCurrency(discretionaryTotal)}
-          subValue={`${Math.round((discretionaryTotal / Math.max(totalExpense, 1)) * 100)}% elastic budget`}
+          subValue={`${Math.round((discretionaryTotal / Math.max(totalExpense, 1)) * 100)}% elastic spend`}
           icon={Tag}
-          iconBg="bg-amber-50"
-          iconColor="text-amber-600"
         />
       </div>
 
-      {/* Filters Bar */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+      {/* Search & Filter Bar */}
+      <div className="rounded-lg border border-slate-200 bg-white p-3 space-y-2.5">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-2.5">
           {/* Search Box */}
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search title, category, merchant..."
+              placeholder="Search by title, category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              className="w-full pl-8 pr-3 py-1.5 rounded-md border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400"
             />
           </div>
 
           {/* Type Filter Tabs */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-full md:w-auto overflow-x-auto">
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-md w-full md:w-auto">
             {(['all', 'income', 'expense', 'recurring'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded text-xs font-medium capitalize transition-all ${
                   typeFilter === t
-                    ? 'bg-white text-slate-900 shadow-sm'
+                    ? 'bg-white text-slate-900 font-semibold shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {t === 'recurring' ? 'Recurring Subscriptions' : t}
+                {t === 'recurring' ? 'Recurring' : t}
               </button>
             ))}
           </div>
         </div>
 
         {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-100 text-xs">
-          <span className="text-slate-400 font-semibold mr-1 flex items-center gap-1 shrink-0">
-            <Filter className="w-3.5 h-3.5" /> Category:
+        <div className="flex items-center gap-1 overflow-x-auto pt-2 border-t border-slate-100 text-xs">
+          <span className="text-slate-400 font-medium text-[11px] mr-1 flex items-center gap-1 shrink-0">
+            <Filter className="w-3 h-3" /> Filter:
           </span>
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors ${
+              className={`px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap transition-colors ${
                 selectedCategory === cat
                   ? 'bg-slate-900 text-white'
-                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/60'
               }`}
             >
               {cat}
@@ -193,76 +180,64 @@ export const TransactionsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Transactions Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-          <h3 className="text-base font-bold text-slate-900">Recorded Transactions Ledger</h3>
-          <span className="text-xs text-slate-500 font-mono">
-            Showing {filteredTransactions.length} of {transactions.length}
-          </span>
-        </div>
-
+      {/* Ledger Table */}
+      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-600 font-bold uppercase text-[11px]">
-                <th className="py-3 px-3">Date</th>
-                <th className="py-3 px-3">Transaction Description</th>
-                <th className="py-3 px-3">Category</th>
-                <th className="py-3 px-3">Nature</th>
-                <th className="py-3 px-3 text-right">Amount</th>
-                <th className="py-3 px-3 text-center">Action</th>
+              <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold uppercase text-[10px] tracking-wider font-mono">
+                <th className="py-2.5 px-3">Date</th>
+                <th className="py-2.5 px-3">Description</th>
+                <th className="py-2.5 px-3">Category</th>
+                <th className="py-2.5 px-3">Nature</th>
+                <th className="py-2.5 px-3 text-right">Amount</th>
+                <th className="py-2.5 px-3 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
-                    No transactions match your current search or filters.
+                  <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
+                    No transactions match current filters.
                   </td>
                 </tr>
               ) : (
                 filteredTransactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3.5 px-3 font-semibold text-slate-900 font-mono">{tx.date}</td>
-                    <td className="py-3.5 px-3">
-                      <div className="font-bold text-slate-900">{tx.title}</div>
-                      {tx.merchant && <div className="text-[11px] text-slate-400">{tx.merchant}</div>}
+                  <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-2.5 px-3 font-mono text-slate-600">{tx.date}</td>
+                    <td className="py-2.5 px-3">
+                      <div className="font-medium text-slate-900">{tx.title}</div>
+                      {tx.merchant && <div className="text-[10px] text-slate-400">{tx.merchant}</div>}
                     </td>
-                    <td className="py-3.5 px-3">
-                      <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                    <td className="py-2.5 px-3">
+                      <span className="inline-block rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-medium text-slate-700">
                         {tx.category}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                    <td className="py-2.5 px-3">
+                      <div className="flex items-center gap-1">
                         {tx.isRecurring && (
-                          <span className="rounded bg-purple-50 px-1.5 py-0.2 text-[10px] font-bold text-purple-700 border border-purple-200">
+                          <span className="rounded bg-purple-50 px-1.5 py-0.2 text-[10px] font-medium text-purple-700 border border-purple-200">
                             Recurring
                           </span>
                         )}
                         {tx.isDiscretionary && (
-                          <span className="rounded bg-amber-50 px-1.5 py-0.2 text-[10px] font-bold text-amber-700 border border-amber-200">
+                          <span className="rounded bg-amber-50 px-1.5 py-0.2 text-[10px] font-medium text-amber-700 border border-amber-200">
                             Discretionary
-                          </span>
-                        )}
-                        {!tx.isRecurring && !tx.isDiscretionary && (
-                          <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-medium text-slate-500">
-                            Fixed / Essential
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-3 text-right font-mono font-bold text-sm">
-                      <span className={tx.type === 'income' ? 'text-emerald-600' : 'text-slate-900'}>
+                    <td className="py-2.5 px-3 text-right font-mono font-semibold text-xs">
+                      <span className={tx.type === 'income' ? 'text-emerald-700' : 'text-slate-900'}>
                         {tx.type === 'income' ? '+' : '-'}
                         {formatCurrency(tx.amount)}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 text-center">
+                    <td className="py-2.5 px-3 text-center">
                       <button
                         onClick={() => deleteTransaction(tx.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                         title="Delete transaction"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

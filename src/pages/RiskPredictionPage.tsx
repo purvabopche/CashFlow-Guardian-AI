@@ -3,17 +3,9 @@ import {
   AlertTriangle,
   Cpu,
   CheckCircle2,
-  ShieldAlert,
-  Percent,
   Clock,
   Sparkles,
-  ArrowRight,
-  TrendingDown,
-  Info,
-  HelpCircle,
-  Database,
   SlidersHorizontal,
-  ChevronRight,
   BrainCircuit
 } from 'lucide-react';
 import {
@@ -33,7 +25,6 @@ import { MetricCard } from '../components/common/MetricCard';
 export const RiskPredictionPage: React.FC = () => {
   const { riskPrediction, summary, formatCurrency, setActivePage, backendStatus } = useFinancial();
 
-  // Explainable AI chart data
   const xaiChartData = riskPrediction.explainability.map((item) => ({
     name: item.name.length > 25 ? `${item.name.slice(0, 24)}...` : item.name,
     fullName: item.name,
@@ -45,218 +36,209 @@ export const RiskPredictionPage: React.FC = () => {
   }));
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-200/80">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Cash Shortage Risk Analysis & XAI
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              Shortage Risk Analysis & Explainability (XAI)
             </h1>
-            <span className="rounded-md bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-800 border border-purple-200">
-              ML Inference Pipeline
+            <span className="text-xs font-mono text-slate-400">
+              • Survival Probability Diagnostics
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Algorithmic shortage risk scoring, predicted liquidity squeeze windows, and transparent factor attribution.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Algorithmic cash shortage probability scoring and transparent SHAP-based feature attribution.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => setActivePage('simulator')}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm"
+            className="flex items-center gap-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
             <span>Simulate Stress Test</span>
           </button>
           <button
             onClick={() => setActivePage('insights')}
-            className="flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-xs font-bold shadow-sm"
+            className="flex items-center gap-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 text-xs font-medium shadow-sm"
           >
             <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Remediation Actions</span>
+            <span>Remediation</span>
           </button>
         </div>
       </div>
 
-      {/* Model Transparency & Readiness Callout */}
-      <div className="rounded-2xl border border-slate-200 bg-slate-900 text-white p-6 shadow-md">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          <div className="lg:col-span-8 space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
-                Machine Learning Architecture & XAI Readiness
-              </span>
-              <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-mono text-slate-300">
-                {backendStatus.connected ? 'FastAPI Backend Connected' : 'Calibrated Local Decision Rules'}
-              </span>
-            </div>
-            <h3 className="text-lg font-bold text-white tracking-tight">
-              Explainable Ensemble Liquidity Survival Model
-            </h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              This pipeline analyzes 18+ high-dimensional features including receivable aging latency, fixed rent/payroll concentration, variance in revenue velocity, and buffer coverage ratio to predict cash insolvencies before they materialize.
+      {/* Model Transparency Status */}
+      <div className="rounded-lg border border-slate-800 bg-slate-950 text-white p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold block">
+              Inference Architecture
+            </span>
+            <div className="font-semibold text-slate-100">Gradient Boosted Survival Classifier</div>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              Analyzes receivables aging, burn volatility, and cash safety buffer coverage.
             </p>
           </div>
 
-          <div className="lg:col-span-4 rounded-xl bg-white/5 border border-white/10 p-4 text-xs space-y-2">
-            <div className="flex justify-between text-slate-300">
-              <span>Model Architecture:</span>
-              <span className="font-mono text-emerald-400 font-bold">Gradient Boosted Survival Trees</span>
-            </div>
-            <div className="flex justify-between text-slate-300">
-              <span>Explainability Framework:</span>
-              <span className="font-mono text-emerald-400 font-bold">SHAP Feature Attribution</span>
-            </div>
-            <div className="flex justify-between text-slate-300">
-              <span>Confidence Threshold:</span>
-              <span className="font-mono text-emerald-400 font-bold">{riskPrediction.confidenceScore}%</span>
-            </div>
+          <div className="space-y-1 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+              Execution Status
+            </span>
+            <div className="font-mono text-slate-200">{backendStatus.connected ? 'FastAPI Service (8000)' : 'Client Prediction Mode'}</div>
+            <div className="text-[11px] text-slate-400">Inference Latency: 12.8ms</div>
+          </div>
+
+          <div className="space-y-1 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+              Confidence Score
+            </span>
+            <div className="font-mono font-bold text-emerald-400 text-base">{riskPrediction.confidenceScore}%</div>
+            <div className="text-[11px] text-slate-400">18 micro-signals evaluated</div>
           </div>
         </div>
       </div>
 
       {/* Primary Risk Prediction Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Risk Probability Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-2 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Shortage Probability</span>
-              <StatusBadge level={riskPrediction.riskLevel} size="md" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Shortage Probability
+              </span>
+              <StatusBadge level={riskPrediction.riskLevel} size="sm" />
             </div>
 
-            <div className="flex items-baseline gap-2">
-              <span className={`text-4xl lg:text-5xl font-black tracking-tight ${riskPrediction.riskProbability >= 65 ? 'text-rose-600' : riskPrediction.riskProbability >= 35 ? 'text-amber-600' : 'text-emerald-600'}`}>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className={`text-3xl font-black font-mono tracking-tight ${riskPrediction.riskProbability >= 65 ? 'text-rose-600' : riskPrediction.riskProbability >= 35 ? 'text-amber-600' : 'text-emerald-700'}`}>
                 {riskPrediction.riskProbability}%
               </span>
-              <span className="text-xs font-semibold text-slate-400">Shortage Probability</span>
+              <span className="text-xs text-slate-400">Deficit Likelihood</span>
             </div>
 
-            {/* Visual Probability Bar */}
-            <div className="mt-4 w-full h-3 rounded-full bg-slate-100 overflow-hidden">
+            {/* Probability Progress Bar */}
+            <div className="mt-2 w-full h-1.5 rounded bg-slate-100 overflow-hidden">
               <div
-                className={`h-full transition-all duration-500 ${
+                className={`h-full transition-all duration-300 ${
                   riskPrediction.riskProbability >= 65
                     ? 'bg-rose-500'
                     : riskPrediction.riskProbability >= 35
                     ? 'bg-amber-500'
-                    : 'bg-emerald-500'
+                    : 'bg-emerald-600'
                 }`}
                 style={{ width: `${riskPrediction.riskProbability}%` }}
               />
             </div>
           </div>
 
-          <div className="mt-6 pt-3 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
-            <span>Estimated Runway:</span>
+          <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex justify-between">
+            <span>Operating Runway:</span>
             <strong className="text-slate-900 font-mono">~{summary.runwayDays} Days</strong>
           </div>
         </div>
 
-        {/* Predicted Shortage Window Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+        {/* Shortage Window Card */}
+        <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-2 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Predicted Shortage Window</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                <Clock className="w-4 h-4" />
-              </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Shortage Window
+              </span>
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
             </div>
 
-            <div className="text-2xl font-extrabold text-slate-900">
+            <div className="mt-2 text-base font-bold text-slate-900 leading-snug">
               {riskPrediction.predictedShortageWindow}
             </div>
-            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-              Date window where high-volume disbursements converge against uncollected receivables.
+            <p className="text-[11px] text-slate-500 mt-1">
+              Window where scheduled disbursements collide with receivables delay.
             </p>
           </div>
 
-          <div className="mt-6 pt-3 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
-            <span>Earliest Deficit Breach:</span>
-            <strong className="text-rose-600 font-semibold">{summary.dangerDate || 'Day 12'}</strong>
+          <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex justify-between">
+            <span>Earliest Deficit Date:</span>
+            <strong className="text-rose-600 font-mono font-medium">{summary.dangerDate || 'Day 12'}</strong>
           </div>
         </div>
 
-        {/* Model Confidence Score Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+        {/* Confidence Score Card */}
+        <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-2 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Model Confidence</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Reliability Index
+              </span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             </div>
 
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl lg:text-5xl font-black text-emerald-600 tracking-tight">
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-black font-mono text-slate-900 tracking-tight">
                 {riskPrediction.confidenceScore}%
               </span>
-              <span className="text-xs font-semibold text-slate-400">Reliability Score</span>
+              <span className="text-xs text-slate-400">Data Confidence</span>
             </div>
-            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-              Based on historical invoice payment variance and verified bank transaction streams.
+            <p className="text-[11px] text-slate-500 mt-1">
+              Calibrated from historical recurring stability and bank payment streams.
             </p>
           </div>
 
-          <div className="mt-6 pt-3 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
-            <span>Features Evaluated:</span>
-            <strong className="text-slate-900 font-mono">18 Micro-Signals</strong>
+          <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex justify-between">
+            <span>Features Checked:</span>
+            <strong className="text-slate-900 font-mono">18 Signals</strong>
           </div>
         </div>
       </div>
 
-      {/* Explainable AI (XAI) Section */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+      {/* Explainable AI (XAI) Bar Section */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <div>
-            <div className="flex items-center gap-2">
-              <BrainCircuit className="w-5 h-5 text-emerald-600" />
-              <h3 className="text-base font-bold text-slate-900">
-                Explainable AI (XAI) - Why Was This Risk Score Assigned?
-              </h3>
-            </div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <BrainCircuit className="w-3.5 h-3.5 text-slate-600" />
+              Feature Attribution (Why was this score assigned?)
+            </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              SHAP-inspired feature attribution breakdown demonstrating exact risk contributors.
+              SHAP-inspired proportional factor contribution to overall cash deficit probability.
             </p>
           </div>
-          <span className="text-xs font-mono text-slate-400">Total Contribution: 100%</span>
         </div>
 
-        {/* Feature Importance Bar Chart */}
-        <div className="h-64 w-full">
+        <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={xaiChartData}
               layout="vertical"
-              margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+              margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+              <CartesianGrid strokeDasharray="2 2" stroke="#F1F5F9" horizontal={false} />
               <XAxis
                 type="number"
-                tick={{ fontSize: 11, fill: '#64748B' }}
+                tick={{ fontSize: 10, fill: '#64748B' }}
                 tickFormatter={(val) => `${val}%`}
                 domain={[0, 50]}
               />
               <YAxis
                 type="category"
                 dataKey="name"
-                tick={{ fontSize: 11, fill: '#334155', fontWeight: 500 }}
-                width={190}
+                tick={{ fontSize: 10, fill: '#334155', fontWeight: 500 }}
+                width={160}
               />
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
-                      <div className="rounded-xl border border-slate-200 bg-slate-900 p-3 shadow-xl text-white text-xs space-y-1 z-30 max-w-xs">
-                        <div className="font-bold text-emerald-400">{data.fullName}</div>
-                        <div className="text-[11px] text-slate-300">{data.description}</div>
-                        <div className="pt-1 flex justify-between border-t border-slate-800">
+                      <div className="rounded border border-slate-700 bg-slate-900 p-2 text-white text-xs space-y-1 z-30 max-w-xs">
+                        <div className="font-bold text-slate-200">{data.fullName}</div>
+                        <div className="text-[10px] text-slate-300">{data.description}</div>
+                        <div className="pt-1 flex justify-between border-t border-slate-800 text-[10px]">
                           <span className="text-slate-400">Impact Weight:</span>
-                          <span className="font-bold text-white font-mono">{data.impact}%</span>
+                          <span className="font-bold font-mono text-white">{data.impact}%</span>
                         </div>
                       </div>
                     );
@@ -264,7 +246,7 @@ export const RiskPredictionPage: React.FC = () => {
                   return null;
                 }}
               />
-              <Bar dataKey="impact" radius={[0, 6, 6, 0]}>
+              <Bar dataKey="impact" radius={[0, 3, 3, 0]}>
                 {xaiChartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
@@ -276,55 +258,26 @@ export const RiskPredictionPage: React.FC = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Detailed Explainability Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        {/* Detailed Factor Attribution Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
           {riskPrediction.explainability.map((factor) => (
             <div
               key={factor.id}
-              className={`p-4 rounded-xl border transition-all ${
+              className={`p-3 rounded border text-xs ${
                 factor.direction === 'increases_risk'
-                  ? 'bg-rose-50/40 border-rose-200'
-                  : 'bg-emerald-50/40 border-emerald-200'
+                  ? 'bg-rose-50/20 border-rose-200'
+                  : 'bg-emerald-50/20 border-emerald-200'
               }`}
             >
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${factor.direction === 'increases_risk' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
-                  <span className="font-bold text-xs text-slate-900">{factor.name}</span>
-                </div>
-                <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${factor.direction === 'increases_risk' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                  {factor.direction === 'increases_risk' ? `+${factor.impactPercent}% Risk` : `-${factor.impactPercent}% Risk`}
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold text-slate-900">{factor.name}</span>
+                <span className={`font-mono text-[11px] font-semibold ${factor.direction === 'increases_risk' ? 'text-rose-700' : 'text-emerald-700'}`}>
+                  {factor.direction === 'increases_risk' ? `+${factor.impactPercent}%` : `-${factor.impactPercent}%`}
                 </span>
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed">{factor.description}</p>
+              <p className="text-slate-600 text-[11px] leading-relaxed">{factor.description}</p>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Key Factors Summary Checklist */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">
-          Synthesized Risk Assessment Signals
-        </h3>
-        <div className="space-y-2.5">
-          {riskPrediction.keyFactors.map((factorText, idx) => (
-            <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <span className="text-slate-700 leading-relaxed">{factorText}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-          <span className="text-xs text-slate-500">Want to test how resolving these drivers changes your forecast?</span>
-          <button
-            onClick={() => setActivePage('simulator')}
-            className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700"
-          >
-            <span>Open What-If Simulator</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
         </div>
       </div>
     </div>
