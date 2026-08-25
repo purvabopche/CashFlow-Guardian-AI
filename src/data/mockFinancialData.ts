@@ -3,10 +3,10 @@ import { FinancialDataset, Transaction } from '../types/financial';
 export const HACKATHON_SCENARIOS: Record<string, FinancialDataset> = {
   critical_shortage: {
     id: 'critical_shortage',
-    name: '🔴 Critical Shortage (Deficit in 12 Days)',
+    name: 'Critical Shortage',
     industry: 'Independent Consulting / SME',
     description: 'Imminent mid-month liquidity crisis: ₹28,500 overdue client invoice collides with ₹22,000 fixed rent and ₹15,000 contractor payroll.',
-    currentBalance: 34500,
+    currentBalance: 8500,
     monthlyInflow: 68000,
     monthlyOutflow: 74000,
     safeBufferThreshold: 15000,
@@ -90,10 +90,10 @@ export const HACKATHON_SCENARIOS: Record<string, FinancialDataset> = {
 
   medium_risk: {
     id: 'medium_risk',
-    name: '🟡 Medium Risk (Moderate Runway ~24 Days)',
+    name: 'Payment Pressure',
     industry: 'Growth B2B SaaS',
     description: 'Operating near safe buffer threshold: revenue covers payroll but unexpected client delays create end-of-month pressure.',
-    currentBalance: 52000,
+    currentBalance: 48000,
     monthlyInflow: 78000,
     monthlyOutflow: 72000,
     safeBufferThreshold: 25000,
@@ -164,19 +164,18 @@ export const HACKATHON_SCENARIOS: Record<string, FinancialDataset> = {
 
   healthy_safe: {
     id: 'healthy_safe',
-    name: '🟢 Healthy & Safe (Strong Cash Buffer)',
+    name: 'Stable Growth',
     industry: 'Profitable E-Commerce & Retail',
     description: 'Robust liquidity resilience: >3.5x buffer coverage, strong recurring monthly surplus, and prompt customer settlement cycles.',
-    currentBalance: 98000,
+    currentBalance: 150000,
     monthlyInflow: 135000,
     monthlyOutflow: 88000,
     safeBufferThreshold: 20000,
     transactions: [
-      { id: 'tx-s1', date: '2026-08-25', title: 'Shopify Merchant Settlements Batch', category: 'Income', type: 'income', amount: 48000, isRecurring: true, isDiscretionary: false },
-      { id: 'tx-s2', date: '2026-08-20', title: 'Amazon Marketplace Payout', category: 'Income', type: 'income', amount: 52000, isRecurring: true, isDiscretionary: false },
-      { id: 'tx-s3', date: '2026-08-15', title: 'Warehouse Fulfillment Logistics', category: 'Utilities', type: 'expense', amount: 16000, isRecurring: true, isDiscretionary: false },
-      { id: 'tx-s4', date: '2026-08-10', title: 'Meta & TikTok Performance Ads', category: 'Shopping', type: 'expense', amount: 22000, isRecurring: true, isDiscretionary: true },
-      { id: 'tx-s5', date: '2026-08-01', title: 'Staff Payroll & Operations', category: 'Payroll & Team', type: 'expense', amount: 26000, isRecurring: true, isDiscretionary: false }
+      { id: 'tx-s1', date: '2026-08-25', title: 'Shopify Store Daily Payout', category: 'Income', type: 'income', amount: 18500, isRecurring: false, isDiscretionary: false },
+      { id: 'tx-s2', date: '2026-08-20', title: 'Warehouse Logistics & Shipping', category: 'Utilities', type: 'expense', amount: 8200, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-s3', date: '2026-08-15', title: 'Wholesale B2B Bulk Settlement', category: 'Income', type: 'income', amount: 48000, isRecurring: true, isDiscretionary: false },
+      { id: 'tx-s4', date: '2026-08-10', title: 'Inventory Replenishment Batch', category: 'Equipment & Capex', type: 'expense', amount: 32000, isRecurring: false, isDiscretionary: false }
     ],
     invoices: [
       {

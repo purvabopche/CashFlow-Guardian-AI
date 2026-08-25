@@ -3,17 +3,17 @@ from .synthetic_generator import generate_synthetic_historical_stream
 
 def get_demo_scenarios() -> Dict[str, Dict[str, Any]]:
     # Generate 60 days of synthetic historical transactions for each profile
-    crit_txs, _ = generate_synthetic_historical_stream(days=60, base_daily_inflow=2200, base_daily_outflow=2450, initial_balance=42000, scenario_type="critical")
-    med_txs, _ = generate_synthetic_historical_stream(days=60, base_daily_inflow=2600, base_daily_outflow=2400, initial_balance=58000, scenario_type="medium")
-    safe_txs, _ = generate_synthetic_historical_stream(days=60, base_daily_inflow=4500, base_daily_outflow=2900, initial_balance=105000, scenario_type="safe")
+    crit_txs, _ = generate_synthetic_historical_stream(days=60, base_daily_inflow=2200, base_daily_outflow=2450, initial_balance=12000, scenario_type="critical")
+    med_txs, _ = generate_synthetic_historical_stream(days=60, base_daily_inflow=2600, base_daily_outflow=2400, initial_balance=48000, scenario_type="medium")
+    safe_txs, _ = generate_synthetic_historical_stream(days=60, base_daily_inflow=4500, base_daily_outflow=2900, initial_balance=150000, scenario_type="safe")
 
     return {
         "critical_shortage": {
             "id": "critical_shortage",
-            "name": "🔴 Critical Cash Shortage (Deficit in 12 Days)",
+            "name": "Critical Shortage",
             "industry": "Independent Consulting / SME",
             "description": "Imminent mid-month liquidity crisis: ₹28,500 overdue client invoice collides with ₹22,000 fixed rent and ₹15,000 contractor payroll.",
-            "current_balance": 34500.0,
+            "current_balance": 8500.0,
             "monthly_inflow": 68000.0,
             "monthly_outflow": 74000.0,
             "safe_buffer_threshold": 15000.0,
@@ -88,10 +88,10 @@ def get_demo_scenarios() -> Dict[str, Dict[str, Any]]:
 
         "medium_risk": {
             "id": "medium_risk",
-            "name": "🟡 Moderate Risk (Runway ~24 Days)",
+            "name": "Payment Pressure",
             "industry": "Growth B2B SaaS",
             "description": "Operating near safe buffer boundary: revenue covers payroll but receivables delay creates end-of-month pressure.",
-            "current_balance": 52000.0,
+            "current_balance": 48000.0,
             "monthly_inflow": 78000.0,
             "monthly_outflow": 72000.0,
             "safe_buffer_threshold": 25000.0,
@@ -156,10 +156,10 @@ def get_demo_scenarios() -> Dict[str, Dict[str, Any]]:
 
         "healthy_safe": {
             "id": "healthy_safe",
-            "name": "🟢 Stable Business (Strong Cash Buffer)",
+            "name": "Stable Growth",
             "industry": "Profitable E-Commerce & Retail",
             "description": "Robust liquidity resilience: >3.5x buffer coverage, strong recurring monthly surplus, and prompt customer settlement cycles.",
-            "current_balance": 98000.0,
+            "current_balance": 150000.0,
             "monthly_inflow": 135000.0,
             "monthly_outflow": 88000.0,
             "safe_buffer_threshold": 20000.0,
