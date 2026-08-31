@@ -9,14 +9,27 @@ import {
   ActionInsight,
   Invoice,
   Payment,
+  PaymentRecord,
+  CreatePaymentInput,
+  PaymentImpactMetrics,
   Transaction,
   CurrencyCode
 } from '../types/financial';
 import { BUSINESS_DATASETS } from '../data/mockFinancialData';
 import { apiClient, BackendStatus } from '../services/apiClient';
+import { getClientPaymentProvider, loadRazorpayCheckoutScript } from '../services/paymentProvider';
 import { calculateSummary, generateForecastTimeline, computeRiskPrediction, runScenarioSimulation, generateInsightsList } from '../utils/financialCalculations';
 
-export type ActivePage = 'dashboard' | 'transactions' | 'forecast' | 'insights' | 'risk' | 'simulator';
+export type ActivePage = 'dashboard' | 'transactions' | 'payments' | 'forecast' | 'insights' | 'risk' | 'simulator';
+
+export interface PaymentConfig {
+  active_provider: string;
+  provider_name: string;
+  is_configured: boolean;
+  key_id: string | null;
+  demo_available: boolean;
+  message: string;
+}
 
 interface FinancialContextType {
   activePage: ActivePage;
@@ -42,9 +55,27 @@ interface FinancialContextType {
   scenarioResult: ScenarioResult;
   resetScenarioParams: () => void;
   
+  // Backend & ML Status
   backendStatus: BackendStatus;
   refreshBackendStatus: () => Promise<void>;
   
+  // Payment Intelligence
+  payments: PaymentRecord[];
+  createPayment: (payment: CreatePaymentInput) => Promise<void>;
+  processPayment: (paymentId: string, simulateFailure?: boolean, provider?: string) => Promise<void>;
+  processRazorpayPayment: (paymentId: string) => Promise<void>;
+  paymentConfig: PaymentConfig | null;
+  activePaymentMode: 'demo' | 'razorpay';
+  setActivePaymentMode: (mode: 'demo' | 'razorpay') => void;
+  refreshPaymentConfig: () => Promise<void>;
+  activePaymentImpact: PaymentImpactMetrics | null;
+
+  setActivePaymentImpact: (impact: PaymentImpactMetrics | null) => void;
+  isCreatePaymentModalOpen: boolean;
+  setIsCreatePaymentModalOpen: (open: boolean) => void;
+  isPaymentImpactModalOpen: boolean;
+  setIsPaymentImpactModalOpen: (open: boolean) => void;
+
   // Modals & Actions
   isAddModalOpen: boolean;
   setIsAddModalOpen: (open: boolean) => void;
@@ -58,7 +89,7 @@ interface FinancialContextType {
   addTransaction: (tx: Omit<Transaction, 'id'>) => void;
   deleteTransaction: (id: string) => void;
   addInvoice: (invoice: Omit<Invoice, 'id'>) => void;
-  addPayment: (payment: Omit<Payment, 'id'>) => void;
+  addPayment: (payment: Partial<PaymentRecord> & { amount: number }) => void;
   updateSafeBuffer: (newBuffer: number) => void;
   updateInvoiceStatus: (id: string, status: 'paid' | 'pending' | 'overdue') => void;
   applyInsightAction: (insightId: string) => void;
@@ -68,6 +99,7 @@ interface FinancialContextType {
   toastMessage: string | null;
   showToast: (msg: string) => void;
 }
+
 
 const DEFAULT_SCENARIO_PARAMS: ScenarioParams = {
   extraSpendingThisWeek: 0,
@@ -99,6 +131,10 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [activeInvoiceForModal, setActiveInvoiceForModal] = useState<Invoice | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isCreatePaymentModalOpen, setIsCreatePaymentModalOpen] = useState(false);
+  const [isPaymentImpactModalOpen, setIsPaymentImpactModalOpen] = useState(false);
+  const [activePaymentImpact, setActivePaymentImpact] = useState<PaymentImpactMetrics | null>(null);
+
 
   const currentDataset = datasets[currentDatasetKey] || datasets.critical_shortage;
 
@@ -118,13 +154,27 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
   // Insights status management
   const [insightsState, setInsightsState] = useState<Record<string, 'open' | 'applied' | 'dismissed'>>({});
 
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
+  const [activePaymentMode, setActivePaymentMode] = useState<'demo' | 'razorpay'>('demo');
+
   const refreshBackendStatus = async () => {
     const status = await apiClient.checkBackendHealth();
     setBackendStatus(status);
   };
 
+  const refreshPaymentConfig = async () => {
+    const cfg = await apiClient.getPaymentConfig();
+    if (cfg) {
+      setPaymentConfig(cfg);
+      if (cfg.active_provider === 'razorpay' && cfg.is_configured) {
+        setActivePaymentMode('razorpay');
+      }
+    }
+  };
+
   useEffect(() => {
     refreshBackendStatus();
+    refreshPaymentConfig();
   }, []);
 
   const showToast = (msg: string) => {
@@ -219,12 +269,29 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     const fetchData = async () => {
       try {
+        const health = await apiClient.checkBackendHealth();
+        setBackendStatus(health);
+
+        let activeDataset = currentDataset;
+        if (health.connected) {
+          const backendDataset = await apiClient.fetchBackendScenarioData(currentDatasetKey);
+          if (backendDataset) {
+            activeDataset = backendDataset;
+            if (!isCancelled) {
+              setDatasets(prev => ({
+                ...prev,
+                [currentDatasetKey]: backendDataset
+              }));
+            }
+          }
+        }
+
         const [newSummary, newForecast, newRisk, newSim, newIns] = await Promise.all([
-          apiClient.getSummary(currentDataset),
-          apiClient.getForecast(currentDataset, forecastRangeDays, scenarioParams),
-          apiClient.getRiskPrediction(currentDataset, scenarioParams),
-          apiClient.simulateScenario(scenarioParams, currentDataset),
-          apiClient.getInsights(currentDataset)
+          apiClient.getSummary(activeDataset),
+          apiClient.getForecast(activeDataset, forecastRangeDays, scenarioParams),
+          apiClient.getRiskPrediction(activeDataset, scenarioParams),
+          apiClient.simulateScenario(scenarioParams, activeDataset),
+          apiClient.getInsights(activeDataset)
         ]);
 
         if (!isCancelled) {
@@ -253,7 +320,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     return () => {
       isCancelled = true;
     };
-  }, [currentDataset, forecastRangeDays, scenarioParams]);
+  }, [currentDatasetKey, forecastRangeDays, scenarioParams]);
 
   // Merged insights with applied status
   const insights = useMemo(() => {
@@ -263,11 +330,19 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     }));
   }, [rawInsights, insightsState]);
 
-  const addTransaction = (txData: Omit<Transaction, 'id'>) => {
+  const addTransaction = async (txData: Omit<Transaction, 'id'>) => {
     const newTx: Transaction = {
       ...txData,
       id: `tx-${Date.now().toString().slice(-4)}`
     };
+
+    if (backendStatus.connected) {
+      try {
+        await apiClient.recordTransaction(txData, currentDatasetKey);
+      } catch (err) {
+        console.warn('Backend sync failed, continuing locally:', err);
+      }
+    }
 
     setDatasets(prev => {
       const active = prev[currentDatasetKey];
@@ -282,7 +357,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       };
     });
 
-    showToast(`Transaction "${newTx.title}" recorded!`);
+    showToast(`Transaction recorded: ${newTx.title} • Forecast & balance updated`);
   };
 
   const deleteTransaction = (id: string) => {
@@ -296,7 +371,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
         }
       };
     });
-    showToast('Transaction removed.');
+    showToast('Transaction removed • Ledger & cash trajectory recalculated');
   };
 
   const addInvoice = (invoiceData: Omit<Invoice, 'id'>) => {
@@ -316,13 +391,32 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       };
     });
 
-    showToast(`Invoice #${newInvoice.id} added to ledger!`);
+    showToast(`Invoice #${newInvoice.id} logged • Receivables pipeline updated`);
   };
 
-  const addPayment = (paymentData: Omit<Payment, 'id'>) => {
+  const addPayment = (paymentData: Partial<PaymentRecord> & { amount: number }) => {
+    const counterparty = paymentData.counterparty || paymentData.vendor || 'Scheduled Payee';
+    const scheduledDate = paymentData.scheduledDate || paymentData.dueDate || new Date().toISOString().split('T')[0];
     const newPayment: Payment = {
-      ...paymentData,
-      id: `PAY-${Date.now().toString().slice(-4)}`
+      id: `PAY-${Date.now().toString().slice(-4)}`,
+      counterparty,
+      vendor: counterparty,
+      description: paymentData.description || paymentData.notes || `Scheduled payment for ${counterparty}`,
+      amount: paymentData.amount,
+      direction: paymentData.direction || 'outgoing',
+      category: paymentData.category || 'Vendor',
+      status: paymentData.status || 'pending',
+      scheduledDate,
+      dueDate: scheduledDate,
+      isRecurring: paymentData.isRecurring ?? true,
+      isFlexible: paymentData.isFlexible ?? false,
+      urgency: paymentData.urgency || 'Medium',
+      notes: paymentData.notes,
+      provider: paymentData.provider || 'demo',
+      referenceId: paymentData.referenceId || null,
+      transactionId: paymentData.transactionId || null,
+      createdAt: paymentData.createdAt || new Date().toISOString().replace('T', ' ').slice(0, 19),
+      processedAt: paymentData.processedAt || null
     };
 
     setDatasets(prev => {
@@ -331,12 +425,406 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
         ...prev,
         [currentDatasetKey]: {
           ...active,
-          payments: [newPayment, ...active.payments]
+          payments: [newPayment, ...(active.payments || [])]
         }
       };
     });
 
-    showToast(`Payment scheduled for ${newPayment.vendor}!`);
+    showToast(`Payment scheduled for ${newPayment.counterparty}!`);
+  };
+
+
+  const createPayment = async (paymentData: CreatePaymentInput) => {
+    let created: PaymentRecord | null = null;
+    if (backendStatus.connected) {
+      created = await apiClient.createPayment(paymentData, currentDatasetKey);
+    }
+    if (!created) {
+      const now = new Date();
+      const scheduledDate = paymentData.scheduledDate || paymentData.dueDate || now.toISOString().split('T')[0];
+      created = {
+        id: `PAY-${Date.now().toString().slice(-6)}`,
+        counterparty: paymentData.counterparty,
+        vendor: paymentData.vendor || paymentData.counterparty,
+        description: paymentData.description,
+        amount: paymentData.amount,
+        direction: paymentData.direction,
+        category: paymentData.category,
+        status: 'pending',
+        scheduledDate,
+        dueDate: scheduledDate,
+        invoiceReference: paymentData.invoiceReference,
+        isRecurring: paymentData.isRecurring,
+        isFlexible: paymentData.isFlexible ?? false,
+        urgency: paymentData.urgency || 'Medium',
+        notes: paymentData.notes || paymentData.description,
+        provider: paymentData.provider || 'demo',
+        referenceId: null,
+        transactionId: null,
+        createdAt: now.toISOString().replace('T', ' ').slice(0, 19),
+        processedAt: null
+      };
+    }
+
+
+    setDatasets((prev) => {
+      const active = prev[currentDatasetKey];
+      return {
+        ...prev,
+        [currentDatasetKey]: {
+          ...active,
+          payments: [created!, ...(active.payments || [])]
+        }
+      };
+    });
+
+    showToast(`Payment scheduled for ${created.counterparty} (${formatCurrency(created.amount)})`);
+  };
+
+  const processPayment = async (
+    paymentId: string,
+    simulateFailure: boolean = false,
+    provider: string = 'demo'
+  ) => {
+    setIsLoading(true);
+
+    // 1. Try Live FastAPI backend first
+    if (backendStatus.connected) {
+      try {
+        const resp = await apiClient.processPayment(paymentId, currentDatasetKey, simulateFailure, provider);
+        if (resp) {
+          setDatasets((prev) => {
+            const active = prev[currentDatasetKey];
+            const updatedPayments = (active.payments || []).map((p) =>
+              p.id === paymentId ? resp.payment : p
+            );
+            const updatedTransactions = resp.transaction && !resp.already_processed
+              ? [resp.transaction, ...active.transactions]
+              : active.transactions;
+            const updatedBalance = resp.impact?.after?.current_balance ?? active.currentBalance;
+
+            let updatedInvoices = active.invoices;
+            const invRef = resp.payment?.invoiceReference || resp.payment?.invoice_reference;
+            if (invRef) {
+              updatedInvoices = (active.invoices || []).map((inv) =>
+                inv.id === invRef ? { ...inv, status: 'paid' as const } : inv
+              );
+            }
+
+            return {
+              ...prev,
+              [currentDatasetKey]: {
+                ...active,
+                currentBalance: updatedBalance,
+                payments: updatedPayments,
+                transactions: updatedTransactions,
+                invoices: updatedInvoices
+              }
+            };
+          });
+
+
+          if (resp.impact) {
+            setActivePaymentImpact({
+              before: {
+                currentBalance: resp.impact.before.current_balance,
+                projectedLowestBalance: resp.impact.before.projected_lowest_balance,
+                shortageProbabilityPct: resp.impact.before.shortage_probability_pct,
+                safetyScore: resp.impact.before.safety_score,
+                runwayDays: resp.impact.before.runway_days,
+                riskLevel: resp.impact.before.risk_level
+              },
+              after: {
+                currentBalance: resp.impact.after.current_balance,
+                projectedLowestBalance: resp.impact.after.projected_lowest_balance,
+                shortageProbabilityPct: resp.impact.after.shortage_probability_pct,
+                safetyScore: resp.impact.after.safety_score,
+                runwayDays: resp.impact.after.runway_days,
+                riskLevel: resp.impact.after.risk_level
+              },
+              delta: {
+                balance: resp.impact.delta.balance,
+                projectedLowestBalance: resp.impact.delta.projected_lowest_balance,
+                shortageProbabilityPct: resp.impact.delta.shortage_probability_pct,
+                safetyScore: resp.impact.delta.safety_score,
+                runwayDays: resp.impact.delta.runway_days
+              },
+              message: resp.impact.message,
+              payment: resp.payment
+            });
+            setIsPaymentImpactModalOpen(true);
+          }
+
+          setIsLoading(false);
+          showToast(resp.impact?.message || 'Payment processed successfully.');
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend process payment error, continuing with local engine:', err);
+      }
+    }
+
+    // 2. Standalone / Local fallback execution
+    const active = currentDataset;
+    const payment = (active.payments || []).find((p) => p.id === paymentId);
+    if (!payment) {
+      setIsLoading(false);
+      showToast('Payment not found.');
+      return;
+    }
+
+    // Idempotency / Duplicate protection check
+    if (payment.status === 'paid') {
+      setIsLoading(false);
+      showToast(`Payment ${paymentId} was already processed. Duplicate processing prevented.`);
+      return;
+    }
+
+    // Before snapshot
+    const beforeSum = summary;
+    const beforeFore = forecast;
+    const beforeRisk = riskPrediction;
+    const beforeSnapshot = {
+      currentBalance: active.currentBalance,
+      projectedLowestBalance: beforeFore.lowestProjectedPoint,
+      shortageProbabilityPct: beforeRisk.riskProbability,
+      safetyScore: beforeSum.cashHealthScore,
+      runwayDays: beforeSum.runwayDays,
+      riskLevel: beforeRisk.riskLevel
+    };
+
+    const clientProvider = getClientPaymentProvider(provider);
+    const result = await clientProvider.processPayment(payment, simulateFailure);
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timestampStr = now.toISOString().replace('T', ' ').slice(0, 19);
+
+    let updatedTx: Transaction | null = null;
+    let newBal = active.currentBalance;
+
+    const updatedPayment: PaymentRecord = {
+      ...payment,
+      status: result.status as any,
+      referenceId: result.referenceId,
+      processedAt: timestampStr,
+      provider: clientProvider.providerId
+    };
+
+    if (result.success) {
+      const txId = `tx-pay-${payment.id}`;
+      updatedPayment.transactionId = txId;
+      const isIncoming = payment.direction === 'incoming';
+
+      updatedTx = {
+        id: txId,
+        date: dateStr,
+        title: `Payment: ${payment.counterparty}`,
+        category: (payment.category as any) || (isIncoming ? 'Income' : 'Equipment & Capex'),
+        type: isIncoming ? 'income' : 'expense',
+        amount: payment.amount,
+        isRecurring: payment.isRecurring,
+        isDiscretionary: false,
+        merchant: payment.counterparty,
+        notes: `Settled via ${clientProvider.displayName} [Ref: ${result.referenceId}]`
+      };
+
+      newBal = isIncoming
+        ? active.currentBalance + payment.amount
+        : Math.max(0, active.currentBalance - payment.amount);
+    }
+
+    // Update datasets
+    const newPayments = (active.payments || []).map((p) => (p.id === paymentId ? updatedPayment : p));
+    const newTransactions = updatedTx ? [updatedTx, ...active.transactions] : active.transactions;
+    let newInvoices = active.invoices;
+    if (result.success && payment.invoiceReference) {
+      newInvoices = (active.invoices || []).map((inv) =>
+        inv.id === payment.invoiceReference ? { ...inv, status: 'paid' as const } : inv
+      );
+    }
+
+    setDatasets((prev) => ({
+      ...prev,
+      [currentDatasetKey]: {
+        ...active,
+        currentBalance: newBal,
+        payments: newPayments,
+        transactions: newTransactions,
+        invoices: newInvoices
+      }
+    }));
+
+    // Calculate after metrics synchronously
+    const afterSum = calculateSummary(newBal, active.monthlyInflow, active.monthlyOutflow, active.safeBufferThreshold, newTransactions);
+    const afterFore = generateForecastTimeline(newBal, active.monthlyInflow, active.monthlyOutflow, active.safeBufferThreshold, forecastRangeDays, newInvoices, newPayments);
+    const afterRisk = computeRiskPrediction(newBal, active.monthlyInflow, active.monthlyOutflow, active.safeBufferThreshold, newInvoices, newPayments);
+
+
+    const afterSnapshot = {
+      currentBalance: newBal,
+      projectedLowestBalance: afterFore.lowestProjectedPoint,
+      shortageProbabilityPct: afterRisk.riskProbability,
+      safetyScore: afterSum.cashHealthScore,
+      runwayDays: afterSum.runwayDays,
+      riskLevel: afterRisk.riskLevel
+    };
+
+    const delta = {
+      balance: Math.round(afterSnapshot.currentBalance - beforeSnapshot.currentBalance),
+      projectedLowestBalance: Math.round(afterSnapshot.projectedLowestBalance - beforeSnapshot.projectedLowestBalance),
+      shortageProbabilityPct: +(afterSnapshot.shortageProbabilityPct - beforeSnapshot.shortageProbabilityPct).toFixed(1),
+      safetyScore: afterSnapshot.safetyScore - beforeSnapshot.safetyScore,
+      runwayDays: afterSnapshot.runwayDays - beforeSnapshot.runwayDays
+    };
+
+    const impactMetrics: PaymentImpactMetrics = {
+      before: beforeSnapshot,
+      after: afterSnapshot,
+      delta,
+      message: result.success
+        ? `Payment of ${formatCurrency(payment.amount)} to ${payment.counterparty} successfully processed in Demo Mode.`
+        : `Payment simulation failed: ${result.message}`,
+      payment: updatedPayment
+    };
+
+    setActivePaymentImpact(impactMetrics);
+    setIsPaymentImpactModalOpen(true);
+    setIsLoading(false);
+    showToast(impactMetrics.message);
+  };
+
+  const processRazorpayPayment = async (paymentId: string) => {
+    setIsLoading(true);
+
+    if (!backendStatus.connected) {
+      setIsLoading(false);
+      showToast('Payment gateway unavailable. Demo mode is still available.');
+      return;
+    }
+
+    try {
+      // 1. Create order on backend
+      const order = await apiClient.createRazorpayOrder(paymentId, currentDatasetKey);
+      if (!order || !order.order_id) {
+        throw new Error('Payment gateway unavailable. Demo mode is still available.');
+      }
+
+      // 2. Dynamically load Razorpay SDK
+      const scriptLoaded = await loadRazorpayCheckoutScript();
+      if (!scriptLoaded || !(window as any).Razorpay) {
+        throw new Error('Payment gateway unavailable. Demo mode is still available.');
+      }
+
+      // 3. Launch Checkout Modal
+      const options = {
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        name: 'CashFlow Guardian AI',
+        description: order.description || `Settlement for ${order.counterparty}`,
+        order_id: order.order_id,
+        handler: async (response: any) => {
+          try {
+            setIsLoading(true);
+            const verifiedResp = await apiClient.verifyRazorpayPayment(
+              paymentId,
+              currentDatasetKey,
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              }
+            );
+
+            // Update local React state with verified backend response
+            const latestBackendDataset = await apiClient.fetchBackendScenarioData(currentDatasetKey);
+            setDatasets((prev) => {
+              const active = latestBackendDataset || prev[currentDatasetKey];
+              const updatedPayments = (active.payments || []).map((p) =>
+                p.id === paymentId ? verifiedResp.payment : p
+              );
+              const updatedTransactions = verifiedResp.transaction && !verifiedResp.already_processed
+                ? [verifiedResp.transaction, ...(active.transactions || [])]
+                : active.transactions;
+              const updatedBalance = verifiedResp.impact?.after?.current_balance ?? active.currentBalance;
+
+              let updatedInvoices = active.invoices;
+              const invRef = verifiedResp.payment?.invoiceReference || verifiedResp.payment?.invoice_reference;
+              if (invRef) {
+                updatedInvoices = (active.invoices || []).map((inv) =>
+                  inv.id === invRef ? { ...inv, status: 'paid' as const } : inv
+                );
+              }
+
+              return {
+                ...prev,
+                [currentDatasetKey]: {
+                  ...active,
+                  currentBalance: updatedBalance,
+                  payments: updatedPayments,
+                  transactions: updatedTransactions,
+                  invoices: updatedInvoices
+                }
+              };
+            });
+
+            if (verifiedResp.impact) {
+              setActivePaymentImpact({
+                before: {
+                  currentBalance: verifiedResp.impact.before.current_balance,
+                  projectedLowestBalance: verifiedResp.impact.before.projected_lowest_balance,
+                  shortageProbabilityPct: verifiedResp.impact.before.shortage_probability_pct,
+                  safetyScore: verifiedResp.impact.before.safety_score,
+                  runwayDays: verifiedResp.impact.before.runway_days,
+                  riskLevel: verifiedResp.impact.before.risk_level
+                },
+                after: {
+                  currentBalance: verifiedResp.impact.after.current_balance,
+                  projectedLowestBalance: verifiedResp.impact.after.projected_lowest_balance,
+                  shortageProbabilityPct: verifiedResp.impact.after.shortage_probability_pct,
+                  safetyScore: verifiedResp.impact.after.safety_score,
+                  runwayDays: verifiedResp.impact.after.runway_days,
+                  riskLevel: verifiedResp.impact.after.risk_level
+                },
+                delta: {
+                  balance: verifiedResp.impact.delta.balance,
+                  projectedLowestBalance: verifiedResp.impact.delta.projected_lowest_balance,
+                  shortageProbabilityPct: verifiedResp.impact.delta.shortage_probability_pct,
+                  safetyScore: verifiedResp.impact.delta.safety_score,
+                  runwayDays: verifiedResp.impact.delta.runway_days
+                },
+                message: verifiedResp.impact.message,
+                payment: verifiedResp.payment
+              });
+              setIsPaymentImpactModalOpen(true);
+            }
+
+            showToast(verifiedResp.impact?.message || 'Razorpay test payment verified and settled.');
+          } catch (err: any) {
+            console.error('Signature verification error:', err);
+            showToast(err.message || 'Signature verification failed.');
+          } finally {
+            setIsLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            showToast('Razorpay Checkout closed.');
+          }
+        },
+        theme: {
+          color: '#0f172a'
+        }
+      };
+
+      const rzpInstance = new (window as any).Razorpay(options);
+      rzpInstance.open();
+    } catch (err: any) {
+      console.error('Razorpay process error:', err);
+      showToast(err.message || 'Payment gateway unavailable. Demo mode is still available.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateSafeBuffer = (newBuffer: number) => {
@@ -351,7 +839,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       };
     });
     setScenarioParams(prev => ({ ...prev, safeBufferAmount: newBuffer }));
-    showToast(`Safe Cash Buffer updated to ${formatCurrency(newBuffer)}`);
+    showToast(`Safe Cash Buffer updated to ${formatCurrency(newBuffer)} • Vulnerability zones recalculated`);
   };
 
   const updateInvoiceStatus = (id: string, status: 'paid' | 'pending' | 'overdue') => {
@@ -370,7 +858,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const applyInsightAction = (insightId: string) => {
     setInsightsState(prev => ({ ...prev, [insightId]: 'applied' }));
-    showToast('Protective action applied! Recalculating cash projection.');
+    showToast('Remedy applied • Inflow/Outflow schedule simulated into forward forecast');
   };
 
   const dismissInsightAction = (insightId: string) => {
@@ -388,7 +876,15 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       ...DEFAULT_SCENARIO_PARAMS,
       safeBufferAmount: currentDataset.safeBufferThreshold
     });
-    showToast('Scenario reset to baseline.');
+    showToast('Scenario parameters reset to baseline.');
+  };
+
+  const handleSetDatasetKey = (key: string) => {
+    setCurrentDatasetKey(key);
+    const target = datasets[key];
+    if (target) {
+      showToast(`Profile loaded: ${target.name} • ML risk & 30d forecast synced`);
+    }
   };
 
   return (
@@ -397,7 +893,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
         activePage,
         setActivePage,
         currentDatasetKey,
-        setDatasetKey: setCurrentDatasetKey,
+        setDatasetKey: handleSetDatasetKey,
         dataset: currentDataset,
         allDatasets: datasets,
         currency,
@@ -415,6 +911,20 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
         resetScenarioParams,
         backendStatus,
         refreshBackendStatus,
+        payments: currentDataset.payments || [],
+        createPayment,
+        processPayment,
+        processRazorpayPayment,
+        paymentConfig,
+        activePaymentMode,
+        setActivePaymentMode,
+        refreshPaymentConfig,
+        activePaymentImpact,
+        setActivePaymentImpact,
+        isCreatePaymentModalOpen,
+        setIsCreatePaymentModalOpen,
+        isPaymentImpactModalOpen,
+        setIsPaymentImpactModalOpen,
         isAddModalOpen,
         setIsAddModalOpen,
         isInvoiceModalOpen,
@@ -440,6 +950,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     </FinancialContext.Provider>
   );
 };
+
 
 export const useFinancial = (): FinancialContextType => {
   const context = useContext(FinancialContext);

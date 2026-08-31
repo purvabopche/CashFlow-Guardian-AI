@@ -6,7 +6,9 @@ import {
   ScenarioResult,
   ActionInsight,
   FinancialDataset,
-  Transaction
+  Transaction,
+  PaymentRecord,
+  CreatePaymentInput
 } from '../types/financial';
 import {
   calculateSummary,
@@ -17,7 +19,7 @@ import {
 } from '../utils/financialCalculations';
 import { BUSINESS_DATASETS } from '../data/mockFinancialData';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 export interface BackendStatus {
   connected: boolean;
@@ -76,6 +78,78 @@ export class CashFlowApiClient {
     return this.backendStatus;
   }
 
+  public async fetchBackendScenarioData(scenarioId: string): Promise<FinancialDataset | null> {
+    if (!this.backendStatus.connected) return null;
+    try {
+      const [dashRes, txRes, payRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/dashboard?scenario_id=${scenarioId}`, { signal: AbortSignal.timeout(3000) }),
+        fetch(`${API_BASE_URL}/transactions?scenario_id=${scenarioId}`, { signal: AbortSignal.timeout(3000) }),
+        fetch(`${API_BASE_URL}/payments?scenario_id=${scenarioId}`, { signal: AbortSignal.timeout(3000) })
+      ]);
+
+      if (dashRes.ok && txRes.ok && payRes.ok) {
+        const dash = await dashRes.json();
+        const txs = await txRes.json();
+        const pays = await payRes.json();
+
+        const baseMock = BUSINESS_DATASETS[scenarioId] || BUSINESS_DATASETS.critical_shortage;
+
+        const normalizedTxs: Transaction[] = txs.map((t: any) => ({
+          id: t.id,
+          date: t.date,
+          title: t.title,
+          category: t.category,
+          type: t.type,
+          amount: t.amount,
+          isRecurring: Boolean(t.is_recurring ?? t.isRecurring),
+          isDiscretionary: Boolean(t.is_discretionary ?? t.isDiscretionary),
+          merchant: t.merchant,
+          notes: t.notes
+        }));
+
+        const normalizedPays: PaymentRecord[] = pays.map((p: any) => ({
+          id: p.id,
+          counterparty: p.counterparty || p.vendor,
+          vendor: p.vendor || p.counterparty,
+          description: p.description,
+          amount: p.amount,
+          direction: p.direction,
+          category: p.category,
+          status: p.status,
+          scheduledDate: p.scheduled_date || p.scheduledDate,
+          dueDate: p.due_date || p.dueDate || p.scheduled_date,
+          invoiceReference: p.invoice_reference || p.invoiceReference,
+          isRecurring: Boolean(p.is_recurring ?? p.isRecurring),
+          isFlexible: Boolean(p.is_flexible ?? p.isFlexible),
+          urgency: p.urgency || 'Medium',
+          notes: p.notes,
+          provider: p.provider,
+          referenceId: p.reference_id || p.referenceId,
+          transactionId: p.transaction_id || p.transactionId,
+          createdAt: p.created_at || p.createdAt,
+          processedAt: p.processed_at || p.processedAt
+        }));
+
+        return {
+          id: scenarioId,
+          name: baseMock.name,
+          industry: baseMock.industry,
+          description: baseMock.description,
+          currentBalance: dash.current_balance,
+          monthlyInflow: dash.monthly_inflow,
+          monthlyOutflow: dash.monthly_outflow,
+          safeBufferThreshold: dash.safe_buffer_threshold,
+          transactions: normalizedTxs,
+          invoices: baseMock.invoices,
+          payments: normalizedPays
+        };
+      }
+    } catch (err) {
+      console.warn('Error fetching backend scenario dataset:', err);
+    }
+    return null;
+  }
+
   public async getSummary(dataset: FinancialDataset): Promise<CashFlowSummary> {
     if (this.backendStatus.connected) {
       try {
@@ -120,7 +194,18 @@ export class CashFlowApiClient {
   }
 
   public async getForecast(dataset: FinancialDataset, days: number = 30, scenarioParams?: Partial<ScenarioParams>): Promise<ForecastData> {
-    if (this.backendStatus.connected && !scenarioParams) {
+    const hasScenarioModifications = scenarioParams && (
+      (scenarioParams.extraSpendingThisWeek ?? 0) > 0 ||
+      (scenarioParams.emergencyFundingAmount ?? 0) > 0 ||
+      (scenarioParams.newRecurringExpenseAmount ?? 0) > 0 ||
+      (scenarioParams.customerPaymentDelayDays ?? 0) > 0 ||
+      (scenarioParams.foodExpenseReductionPercent ?? 0) > 0 ||
+      (scenarioParams.dailyDiscretionaryTrim ?? 0) > 0 ||
+      (scenarioParams.monthlyRevenueChangePercent ?? 0) !== 0 ||
+      (scenarioParams.vendorPaymentShiftDays ?? 0) > 0
+    );
+
+    if (this.backendStatus.connected && !hasScenarioModifications) {
       try {
         const res = await fetch(`${API_BASE_URL}/forecast?scenario_id=${dataset.id}&days=${days}`, {
           signal: AbortSignal.timeout(3000)
@@ -184,7 +269,18 @@ export class CashFlowApiClient {
     dataset: FinancialDataset,
     scenarioParams?: Partial<ScenarioParams>
   ): Promise<RiskPrediction> {
-    if (this.backendStatus.connected && !scenarioParams) {
+    const hasScenarioModifications = scenarioParams && (
+      (scenarioParams.extraSpendingThisWeek ?? 0) > 0 ||
+      (scenarioParams.emergencyFundingAmount ?? 0) > 0 ||
+      (scenarioParams.newRecurringExpenseAmount ?? 0) > 0 ||
+      (scenarioParams.customerPaymentDelayDays ?? 0) > 0 ||
+      (scenarioParams.foodExpenseReductionPercent ?? 0) > 0 ||
+      (scenarioParams.dailyDiscretionaryTrim ?? 0) > 0 ||
+      (scenarioParams.monthlyRevenueChangePercent ?? 0) !== 0 ||
+      (scenarioParams.vendorPaymentShiftDays ?? 0) > 0
+    );
+
+    if (this.backendStatus.connected && !hasScenarioModifications) {
       try {
         const res = await fetch(`${API_BASE_URL}/risk-analysis?scenario_id=${dataset.id}`, {
           signal: AbortSignal.timeout(3000)
@@ -209,11 +305,11 @@ export class CashFlowApiClient {
               isRemediable: f.is_remediable
             })),
             modelMetadata: {
-              modelVersion: d.model_metadata.model_version,
-              modelType: d.model_metadata.model_type,
-              trainingStatus: d.model_metadata.status,
-              inferenceLatencyMs: d.model_metadata.inference_latency_ms,
-              featuresEvaluated: d.model_metadata.features_evaluated,
+              modelVersion: d.model_metadata?.model_version || '2.3.0',
+              modelType: d.model_metadata?.model_name || d.model_metadata?.model_type || 'Random Forest Cash Shortage Classifier',
+              trainingStatus: d.model_metadata?.status || 'Trained & Loaded',
+              inferenceLatencyMs: d.model_metadata?.inference_latency_ms || 11.2,
+              featuresEvaluated: d.model_metadata?.feature_count || d.model_metadata?.features_evaluated || 12,
               isMockOrLive: 'live_fastapi'
             }
           };
@@ -341,10 +437,10 @@ export class CashFlowApiClient {
     );
   }
 
-  public async recordTransaction(tx: Omit<Transaction, 'id'>, datasetId: string): Promise<void> {
+  public async recordTransaction(tx: Omit<Transaction, 'id'>, datasetId: string): Promise<any> {
     if (this.backendStatus.connected) {
       try {
-        await fetch(`${API_BASE_URL}/transactions?scenario_id=${datasetId}`, {
+        const res = await fetch(`${API_BASE_URL}/transactions?scenario_id=${datasetId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -361,15 +457,354 @@ export class CashFlowApiClient {
           }),
           signal: AbortSignal.timeout(3000)
         });
+        if (res.ok) {
+          return await res.json();
+        }
       } catch (err) {
         console.warn('FastAPI record transaction error:', err);
       }
     }
+    return null;
+  }
+
+  public async getModelInfo(): Promise<any> {
+    if (this.backendStatus.connected) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/model-info`, {
+          signal: AbortSignal.timeout(2500)
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('FastAPI model-info error:', err);
+      }
+    }
+    return null;
+  }
+
+  public async predictCustom(params: {
+    current_balance: number;
+    safe_threshold: number;
+    recent_transactions: any[];
+    expected_income: any[];
+    recurring_payments: any[];
+  }): Promise<any> {
+    if (this.backendStatus.connected) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+          signal: AbortSignal.timeout(3500)
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('FastAPI predict error:', err);
+      }
+    }
+    return null;
+  }
+
+  public async getPayments(datasetId: string): Promise<PaymentRecord[]> {
+    if (this.backendStatus.connected) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/payments?scenario_id=${datasetId}`, {
+          signal: AbortSignal.timeout(3000)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return data.map((p: any) => ({
+            id: p.id,
+            counterparty: p.counterparty || p.vendor,
+            vendor: p.vendor || p.counterparty,
+            description: p.description,
+            amount: p.amount,
+            direction: p.direction,
+            category: p.category,
+            status: p.status,
+            scheduledDate: p.scheduled_date,
+            dueDate: p.due_date || p.scheduled_date,
+            invoiceReference: p.invoice_reference,
+            isRecurring: p.is_recurring,
+            isFlexible: p.is_flexible,
+            urgency: p.urgency,
+            notes: p.notes,
+            provider: p.provider,
+            referenceId: p.reference_id,
+            transactionId: p.transaction_id,
+            createdAt: p.created_at,
+            processedAt: p.processed_at
+          }));
+        }
+      } catch (err) {
+        console.warn('FastAPI getPayments error, using dataset payments:', err);
+      }
+    }
+    return (BUSINESS_DATASETS[datasetId]?.payments as PaymentRecord[]) || [];
+  }
+
+  public async createPayment(
+    payment: CreatePaymentInput,
+    datasetId: string
+  ): Promise<PaymentRecord | null> {
+    if (this.backendStatus.connected) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/payments?scenario_id=${datasetId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            counterparty: payment.counterparty,
+            description: payment.description,
+            amount: payment.amount,
+            direction: payment.direction,
+            category: payment.category,
+            scheduled_date: payment.scheduledDate,
+            invoice_reference: payment.invoiceReference,
+            is_recurring: payment.isRecurring
+          }),
+          signal: AbortSignal.timeout(3000)
+        });
+        if (res.ok) {
+          const p = await res.json();
+          return {
+            id: p.id,
+            counterparty: p.counterparty,
+            vendor: p.vendor,
+            description: p.description,
+            amount: p.amount,
+            direction: p.direction,
+            category: p.category,
+            status: p.status,
+            scheduledDate: p.scheduled_date,
+            dueDate: p.due_date,
+            invoiceReference: p.invoice_reference,
+            isRecurring: p.is_recurring,
+            isFlexible: p.is_flexible,
+            urgency: p.urgency,
+            notes: p.notes,
+            provider: p.provider,
+            referenceId: p.reference_id,
+            transactionId: p.transaction_id,
+            createdAt: p.created_at,
+            processedAt: p.processed_at
+          };
+        }
+      } catch (err) {
+        console.warn('FastAPI createPayment error:', err);
+      }
+    }
+    return null;
+  }
+
+  public async processPayment(
+    paymentId: string,
+    datasetId: string,
+    simulateFailure: boolean = false,
+    provider: string = 'demo'
+  ): Promise<any> {
+    if (this.backendStatus.connected) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/payments/${paymentId}/process?scenario_id=${datasetId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            simulate_failure: simulateFailure,
+            provider
+          }),
+          signal: AbortSignal.timeout(4000)
+        });
+        if (res.ok) {
+          const raw = await res.json();
+          const p = raw.payment;
+          const normalizedPayment: PaymentRecord = {
+            id: p.id,
+            counterparty: p.counterparty || p.vendor,
+            vendor: p.vendor || p.counterparty,
+            description: p.description,
+            amount: p.amount,
+            direction: p.direction,
+            category: p.category,
+            status: p.status,
+            scheduledDate: p.scheduled_date || p.scheduledDate,
+            dueDate: p.due_date || p.dueDate || p.scheduled_date,
+            invoiceReference: p.invoice_reference || p.invoiceReference,
+            isRecurring: p.is_recurring ?? p.isRecurring ?? false,
+            isFlexible: p.is_flexible ?? p.isFlexible ?? false,
+            urgency: p.urgency || 'Medium',
+            notes: p.notes,
+            provider: p.provider,
+            referenceId: p.reference_id || p.referenceId,
+            transactionId: p.transaction_id || p.transactionId,
+            createdAt: p.created_at || p.createdAt,
+            processedAt: p.processed_at || p.processedAt
+          };
+
+          let normalizedTx = null;
+          if (raw.transaction) {
+            const t = raw.transaction;
+            normalizedTx = {
+              id: t.id,
+              date: t.date,
+              title: t.title,
+              category: t.category,
+              type: t.type,
+              amount: t.amount,
+              isRecurring: t.is_recurring ?? t.isRecurring ?? false,
+              isDiscretionary: t.is_discretionary ?? t.isDiscretionary ?? false,
+              merchant: t.merchant,
+              notes: t.notes
+            };
+          }
+
+          return {
+            ...raw,
+            payment: normalizedPayment,
+            transaction: normalizedTx
+          };
+        }
+      } catch (err) {
+        console.warn('FastAPI processPayment error:', err);
+      }
+    }
+    return null;
+  }
+
+
+  public async getPaymentConfig(): Promise<{
+    active_provider: string;
+    provider_name: string;
+    is_configured: boolean;
+    key_id: string | null;
+    demo_available: boolean;
+    message: string;
+  } | null> {
+    if (this.backendStatus.connected) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/payments/config`, {
+          signal: AbortSignal.timeout(3000)
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('FastAPI getPaymentConfig error:', err);
+      }
+    }
+    return {
+      active_provider: 'demo',
+      provider_name: 'Demo Payment Simulator (Test Mode)',
+      is_configured: true,
+      key_id: null,
+      demo_available: true,
+      message: 'Demo Payment Mode active.'
+    };
+  }
+
+  public async createRazorpayOrder(
+    paymentId: string,
+    datasetId: string
+  ): Promise<{
+    order_id: string;
+    amount: number;
+    amount_inr: number;
+    currency: string;
+    key_id: string;
+    payment_id: string;
+    counterparty: string;
+    description: string;
+    receipt?: string;
+  }> {
+    if (!this.backendStatus.connected) {
+      throw new Error('Payment gateway unavailable. Demo mode is still available.');
+    }
+    const res = await fetch(`${API_BASE_URL}/payments/${paymentId}/razorpay/create-order?scenario_id=${datasetId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Payment gateway unavailable. Demo mode is still available.');
+    }
+    return await res.json();
+  }
+
+  public async verifyRazorpayPayment(
+    paymentId: string,
+    datasetId: string,
+    payload: {
+      razorpay_order_id: string;
+      razorpay_payment_id: string;
+      razorpay_signature: string;
+    }
+  ): Promise<any> {
+    if (!this.backendStatus.connected) {
+      throw new Error('Payment gateway unavailable. Demo mode is still available.');
+    }
+    const res = await fetch(`${API_BASE_URL}/payments/${paymentId}/razorpay/verify?scenario_id=${datasetId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Payment signature verification failed.');
+    }
+    const raw = await res.json();
+    const p = raw.payment;
+    const normalizedPayment: PaymentRecord = {
+      id: p.id,
+      counterparty: p.counterparty || p.vendor,
+      vendor: p.vendor || p.counterparty,
+      description: p.description,
+      amount: p.amount,
+      direction: p.direction,
+      category: p.category,
+      status: p.status,
+      scheduledDate: p.scheduled_date || p.scheduledDate,
+      dueDate: p.due_date || p.dueDate || p.scheduled_date,
+      invoiceReference: p.invoice_reference || p.invoiceReference,
+      isRecurring: p.is_recurring ?? p.isRecurring ?? false,
+      isFlexible: p.is_flexible ?? p.isFlexible ?? false,
+      urgency: p.urgency || 'Medium',
+      notes: p.notes,
+      provider: p.provider,
+      referenceId: p.reference_id || p.referenceId,
+      transactionId: p.transaction_id || p.transactionId,
+      createdAt: p.created_at || p.createdAt,
+      processedAt: p.processed_at || p.processedAt
+    };
+
+    let normalizedTx = null;
+    if (raw.transaction) {
+      const t = raw.transaction;
+      normalizedTx = {
+        id: t.id,
+        date: t.date,
+        title: t.title,
+        category: t.category,
+        type: t.type,
+        amount: t.amount,
+        isRecurring: t.is_recurring ?? t.isRecurring ?? false,
+        isDiscretionary: t.is_discretionary ?? t.isDiscretionary ?? false,
+        merchant: t.merchant,
+        notes: t.notes
+      };
+    }
+
+    return {
+      ...raw,
+      payment: normalizedPayment,
+      transaction: normalizedTx
+    };
   }
 
   public getDatasets(): Record<string, FinancialDataset> {
     return BUSINESS_DATASETS;
   }
 }
+
 
 export const apiClient = new CashFlowApiClient();

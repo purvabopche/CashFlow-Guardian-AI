@@ -19,7 +19,9 @@ export function calculateSummary(
   monthlyInflow: number,
   monthlyOutflow: number,
   safeBuffer: number,
-  transactions: Transaction[] = []
+  transactions: Transaction[] = [],
+  invoices: Invoice[] = [],
+  payments: Payment[] = []
 ): CashFlowSummary {
   // Dynamically aggregate from transactions if present
   const recentExpenses = transactions
@@ -71,20 +73,12 @@ export function calculateSummary(
 
   safetyScore = Math.max(6, Math.min(99, Math.round(safetyScore)));
 
-  // Estimate exact danger breach date
-  let dangerDayCount = 0;
-  let dangerDaysFromNow = 12;
-  let dangerDate: string | null = null;
-  const now = new Date();
-
-  if (projected30Day < safeBuffer || currentBalance < safeBuffer * 1.3) {
-    const estimatedDailyDepletion = dailyBurn > 0 ? dailyBurn : (effectiveOutflow * 0.4) / 15;
-    const daysToDeficit = Math.max(3, Math.min(24, Math.floor((currentBalance - safeBuffer * 0.8) / Math.max(estimatedDailyDepletion, 350))));
-    dangerDaysFromNow = daysToDeficit;
-    dangerDayCount = Math.max(4, 30 - daysToDeficit);
-    const targetDate = new Date(now.getTime() + daysToDeficit * 24 * 60 * 60 * 1000);
-    dangerDate = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
+  // Synchronize exact danger breach date from actual 30-day forecast timeline
+  const forecastData = generateForecastTimeline(currentBalance, effectiveInflow, effectiveOutflow, safeBuffer, 30, invoices, payments);
+  const dangerDayCount = forecastData.daysBelowThresholdCount;
+  const dangerDate = forecastData.predictedBreachDate;
+  const firstBreach = forecastData.forecastDays.find(d => d.isBelowThreshold);
+  const dangerDaysFromNow = firstBreach ? firstBreach.dayIndex : (dangerDate ? 12 : 0);
 
   return {
     currentBalance,
@@ -369,10 +363,16 @@ export function computeRiskPrediction(
   if (riskProbability >= 65) riskLevel = 'High';
   else if (riskProbability >= 35) riskLevel = 'Medium';
 
+  const forecastData = generateForecastTimeline(effectiveBalance, adjustedInflow, adjustedOutflow, activeBuffer, 30, invoices, payments, scenarioParams);
   let shortageWindow = 'No critical shortage predicted in the next 60 days';
-  if (riskProbability >= 72) shortageWindow = 'Days 12 – 18 (Immediate Cash Deficit Window)';
-  else if (riskProbability >= 48) shortageWindow = 'Days 20 – 28 (Mid-to-End Month Pressure)';
-  else if (riskProbability >= 32) shortageWindow = 'Days 35 – 45 (Moderate Horizon Risk)';
+  if (forecastData.predictedBreachDate) {
+    const breachDay = forecastData.forecastDays.find(d => d.isBelowThreshold);
+    shortageWindow = `Day ${breachDay?.dayIndex || 12} (${forecastData.predictedBreachDate}) Deficit Window`;
+  } else if (riskProbability >= 65) {
+    shortageWindow = 'Days 12 – 18 (Immediate Cash Deficit Window)';
+  } else if (riskProbability >= 35) {
+    shortageWindow = 'Days 20 – 28 (Mid-to-End Month Pressure)';
+  }
 
   const runwayDays = monthlyBurn > 0 ? Math.max(2, Math.floor(effectiveBalance / (monthlyBurn / 30))) : 180;
   const confidenceScore = Math.min(96.5, Math.max(82.0, Math.round((89.4 + (invoices.length > 3 ? 3.5 : -2.0)) * 10) / 10));
@@ -542,10 +542,10 @@ export function runScenarioSimulation(
 
   const balanceDelta = simulatedForecast.lowestProjectedPoint - baselineForecast.lowestProjectedPoint;
   const riskDelta = Math.round((simulatedRisk.riskProbability - baselineRisk.riskProbability) * 10) / 10;
-
-  const summaryNote = balanceDelta >= 0
-    ? `Under this simulation, your lowest cash balance improves by +₹${Math.abs(balanceDelta).toLocaleString()}, reducing shortage probability from ${baselineRisk.riskProbability}% to ${simulatedRisk.riskProbability}% (Safety Score +${simSafetyScore - baselineSummary.cashHealthScore}).`
-    : `Under this simulation, lowest cash balance drops by -₹${Math.abs(balanceDelta).toLocaleString()}, increasing shortage risk from ${baselineRisk.riskProbability}% to ${simulatedRisk.riskProbability}% (delta +${riskDelta}%).`;
+  const isRiskReduced = simulatedRisk.riskProbability <= baselineRisk.riskProbability;
+  const summaryNote = isRiskReduced
+    ? `Under this simulation, lowest cash balance ${balanceDelta >= 0 ? `improves by +₹${Math.abs(balanceDelta).toLocaleString()}` : `variance is -₹${Math.abs(balanceDelta).toLocaleString()}`}, reducing shortage probability from ${baselineRisk.riskProbability}% to ${simulatedRisk.riskProbability}% (Safety Score ${simSafetyScore - baselineSummary.cashHealthScore >= 0 ? `+${simSafetyScore - baselineSummary.cashHealthScore}` : simSafetyScore - baselineSummary.cashHealthScore}).`
+    : `Under this simulation, lowest cash balance ${balanceDelta < 0 ? `drops by -₹${Math.abs(balanceDelta).toLocaleString()}` : `variance is +₹${Math.abs(balanceDelta).toLocaleString()}`}, increasing shortage risk from ${baselineRisk.riskProbability}% to ${simulatedRisk.riskProbability}% (delta +${riskDelta}%).`;
 
   return {
     params,

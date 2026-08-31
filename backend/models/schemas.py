@@ -180,3 +180,91 @@ class CustomPredictResponse(BaseModel):
     feature_importance: List[Dict[str, Any]]
     safety_score: int
     safety_score_breakdown: SafetyScoreBreakdown
+
+PaymentDirection = Literal['incoming', 'outgoing']
+PaymentStatus = Literal['pending', 'processing', 'paid', 'failed']
+
+class PaymentRecord(BaseModel):
+    id: str
+    counterparty: str
+    description: str
+    amount: float = Field(..., gt=0, description="Amount must be positive")
+    direction: PaymentDirection
+    category: str
+    status: PaymentStatus = 'pending'
+    scheduled_date: str
+    invoice_reference: Optional[str] = None
+    is_recurring: bool = False
+    provider: str = 'demo'
+    reference_id: Optional[str] = None
+    transaction_id: Optional[str] = None
+    created_at: Optional[str] = None
+    processed_at: Optional[str] = None
+
+class CreatePaymentRequest(BaseModel):
+    counterparty: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+    amount: float = Field(..., gt=0)
+    direction: PaymentDirection
+    category: str = Field(..., min_length=1)
+    scheduled_date: str = Field(..., min_length=1)
+    invoice_reference: Optional[str] = None
+    is_recurring: bool = False
+
+class ProcessPaymentRequest(BaseModel):
+    simulate_failure: bool = False
+    provider: str = 'demo'
+
+class PaymentImpactSnapshot(BaseModel):
+    current_balance: float
+    projected_lowest_balance: float
+    shortage_probability_pct: float
+    safety_score: int
+    runway_days: int
+    risk_level: RiskLevel
+
+class PaymentImpactDelta(BaseModel):
+    balance: float
+    projected_lowest_balance: float
+    shortage_probability_pct: float
+    safety_score: int
+    runway_days: int
+
+class PaymentImpactSummary(BaseModel):
+    before: PaymentImpactSnapshot
+    after: PaymentImpactSnapshot
+    delta: PaymentImpactDelta
+    message: str
+
+class ProcessPaymentResponse(BaseModel):
+    payment: PaymentRecord
+    transaction: Optional[TransactionItem] = None
+    impact: PaymentImpactSummary
+    summary: DashboardSummaryResponse
+    forecast: ForecastResponse
+    already_processed: bool = False
+
+class PaymentConfigResponse(BaseModel):
+    active_provider: str
+    provider_name: str
+    is_configured: bool
+    key_id: Optional[str] = None
+    demo_available: bool = True
+    message: str
+
+class RazorpayOrderResponse(BaseModel):
+    order_id: str
+    amount: int  # in paise
+    amount_inr: float
+    currency: str = "INR"
+    key_id: str
+    payment_id: str
+    counterparty: str
+    description: str
+    receipt: Optional[str] = None
+
+class RazorpayVerifyRequest(BaseModel):
+    razorpay_order_id: str = Field(..., min_length=1)
+    razorpay_payment_id: str = Field(..., min_length=1)
+    razorpay_signature: str = Field(..., min_length=1)
+

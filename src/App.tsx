@@ -8,9 +8,12 @@ import { ForecastPage } from './pages/ForecastPage';
 import { RiskPredictionPage } from './pages/RiskPredictionPage';
 import { ScenarioSimulatorPage } from './pages/ScenarioSimulatorPage';
 import { AiInsightsPage } from './pages/AiInsightsPage';
+import { PaymentsPage } from './pages/PaymentsPage';
 import { AddTransactionModal } from './components/modals/AddTransactionModal';
 import { InvoiceFollowUpModal } from './components/modals/InvoiceFollowUpModal';
 import { ExportReportModal } from './components/modals/ExportReportModal';
+import { CreatePaymentModal } from './components/modals/CreatePaymentModal';
+import { PaymentImpactModal } from './components/modals/PaymentImpactModal';
 import { CheckCircle2 } from 'lucide-react';
 
 const AppContent: React.FC = () => {
@@ -25,17 +28,22 @@ const AppContent: React.FC = () => {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
         {activePage === 'dashboard' && <DashboardPage />}
         {activePage === 'transactions' && <TransactionsPage />}
+        {activePage === 'payments' && <PaymentsPage />}
         {activePage === 'forecast' && <ForecastPage />}
         {activePage === 'insights' && <AiInsightsPage />}
         {activePage === 'risk' && <RiskPredictionPage />}
         {activePage === 'simulator' && <ScenarioSimulatorPage />}
       </main>
 
-      {/* Global Toast Notification */}
+      {/* Global Fintech Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-slate-900 text-white px-4 py-3 shadow-2xl border border-slate-700 animate-slide-up text-xs font-semibold">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-slate-950 text-white px-4 py-3 shadow-2xl border border-slate-800 animate-slide-up text-xs font-mono font-medium backdrop-blur-md max-w-md">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-950 text-emerald-400 border border-emerald-800/80">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+          </div>
+          <div className="flex-1 text-slate-200 leading-snug">
+            {toastMessage}
+          </div>
         </div>
       )}
 
@@ -43,6 +51,9 @@ const AppContent: React.FC = () => {
       <AddTransactionModal />
       <InvoiceFollowUpModal />
       <ExportReportModal />
+      <CreatePaymentModal />
+      <PaymentImpactModal />
+
 
       {/* Footer */}
       <Footer />

@@ -17,22 +17,22 @@ export const Footer: React.FC = () => {
               CashFlow Guardian AI
             </span>
             <span className="text-slate-300">|</span>
-            <span className="text-slate-500 text-[11px]">
+            <span className="text-slate-500 text-xs font-medium">
               Predictive Liquidity Intelligence
             </span>
           </div>
 
           <div className="flex items-center gap-4 text-xs text-slate-500">
-            <button onClick={() => setActivePage('dashboard')} className="hover:text-slate-900 transition-colors">
+            <button onClick={() => setActivePage('dashboard')} className="hover:text-slate-900 transition-colors font-medium">
               Dashboard
             </button>
-            <button onClick={() => setActivePage('transactions')} className="hover:text-slate-900 transition-colors">
+            <button onClick={() => setActivePage('transactions')} className="hover:text-slate-900 transition-colors font-medium">
               Transactions
             </button>
-            <button onClick={() => setActivePage('forecast')} className="hover:text-slate-900 transition-colors">
+            <button onClick={() => setActivePage('forecast')} className="hover:text-slate-900 transition-colors font-medium">
               Forecast
             </button>
-            <button onClick={() => setActivePage('simulator')} className="hover:text-slate-900 transition-colors">
+            <button onClick={() => setActivePage('simulator')} className="hover:text-slate-900 transition-colors font-medium">
               Simulator
             </button>
             <a
@@ -42,12 +42,12 @@ export const Footer: React.FC = () => {
               className="inline-flex items-center gap-1 hover:text-slate-900 transition-colors font-medium text-slate-700"
             >
               <span>GitHub</span>
-              <ExternalLink className="w-3 h-3 text-slate-400" />
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
             </a>
           </div>
         </div>
 
-        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-400">
+        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
           <div>
             © {new Date().getFullYear()} CashFlow Guardian AI. Developed for SME & Individual Liquidity Intelligence.
           </div>

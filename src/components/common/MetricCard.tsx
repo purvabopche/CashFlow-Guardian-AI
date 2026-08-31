@@ -31,7 +31,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 }) => {
   return (
     <div
-      className={`rounded-lg border bg-white p-4 transition-all duration-150 ${
+      className={`rounded-xl border bg-white p-5 transition-all duration-150 shadow-2xs ${
         variant === 'danger'
           ? 'border-rose-200 bg-rose-50/20'
           : variant === 'highlight'
@@ -39,25 +39,27 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           : 'border-slate-200/90 hover:border-slate-300'
       } ${className}`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="flex items-center justify-between gap-2 font-sans">
+        <span className="text-xs font-semibold text-slate-500 tracking-normal">
           {title}
         </span>
         {badge ? (
           badge
         ) : Icon ? (
-          <Icon className="w-4 h-4 text-slate-400" />
+          <div className="p-1 rounded-md bg-slate-100/80 text-slate-500 border border-slate-200/50">
+            <Icon className="w-3.5 h-3.5" />
+          </div>
         ) : null}
       </div>
 
-      <div className="mt-2 flex items-baseline justify-between gap-2">
-        <div className="text-xl font-semibold tracking-tight text-slate-900 font-mono">
+      <div className="mt-3 flex items-baseline justify-between gap-2">
+        <div className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 font-mono tabular-nums">
           {value}
         </div>
 
         {change && (
           <span
-            className={`text-xs font-medium font-mono ${
+            className={`text-xs font-semibold font-mono tabular-nums ${
               change.value >= 0
                 ? change.isPositiveGood !== false
                   ? 'text-emerald-700'
@@ -74,7 +76,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       </div>
 
       {subValue && (
-        <div className="mt-1 text-xs text-slate-500 truncate">
+        <div className="mt-1.5 text-xs text-slate-500 truncate font-sans">
           {subValue}
         </div>
       )}

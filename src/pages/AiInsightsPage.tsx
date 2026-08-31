@@ -12,12 +12,16 @@ import {
   X,
   SlidersHorizontal,
   BrainCircuit,
-  HelpCircle
+  HelpCircle,
+  ShieldAlert,
+  ArrowUpRight,
+  TrendingDown,
+  Layers
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useFinancial } from '../context/FinancialContext';
 import { StatusBadge } from '../components/common/StatusBadge';
-import { MetricCard } from '../components/common/MetricCard';
+import { IntelligenceJourneyFooter } from '../components/common/IntelligenceJourneyFooter';
 
 export const AiInsightsPage: React.FC = () => {
   const {
@@ -33,7 +37,6 @@ export const AiInsightsPage: React.FC = () => {
   } = useFinancial();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedPriority, setSelectedPriority] = useState<string>('All');
   const [showWhyModal, setShowWhyModal] = useState<boolean>(false);
 
   const categories = [
@@ -47,7 +50,6 @@ export const AiInsightsPage: React.FC = () => {
 
   const filteredInsights = insights.filter((item) => {
     if (selectedCategory !== 'All' && item.category !== selectedCategory) return false;
-    if (selectedPriority !== 'All' && item.priority !== selectedPriority) return false;
     return true;
   });
 
@@ -58,6 +60,8 @@ export const AiInsightsPage: React.FC = () => {
   const totalRunwayExtensionDays = insights
     .filter((i) => i.status === 'open')
     .reduce((sum, i) => sum + i.runwayDaysImpact, 0);
+
+  const appliedCount = insights.filter((i) => i.status === 'applied').length;
 
   const handleApply = (id: string) => {
     try {
@@ -72,251 +76,393 @@ export const AiInsightsPage: React.FC = () => {
     applyInsightAction(id);
   };
 
-  // Separate the top critical recommendation to be visually dominant
-  const primaryInsight = filteredInsights.find(i => i.priority === 'Critical' && i.status === 'open') || filteredInsights[0];
-  const secondaryInsights = filteredInsights.filter(i => i.id !== primaryInsight?.id);
+  // Group by Priority Hierarchy
+  const criticalActions = filteredInsights.filter((i) => i.priority === 'Critical');
+  const highPriorityActions = filteredInsights.filter((i) => i.priority === 'High');
+  const watchlistActions = filteredInsights.filter((i) => i.priority === 'Medium' || i.priority === 'Low');
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-200/80">
+    <div className="space-y-7 pb-12 animate-fade-in">
+      {/* 1. Header & Quick Controls */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200/90 font-sans">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Actionable AI Liquidity Recommendations
-            </h1>
-            <span className="text-xs font-mono text-slate-400">
-              • {insights.filter((i) => i.status === 'open').length} Open Prescriptions
+          <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+            <span>Recommended actions</span>
+            <span className="text-slate-300">•</span>
+            <span>{insights.filter((i) => i.status === 'open').length} open suggestions</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+              Rule-based recommendations
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Targeted interventions to prevent liquidity shortages and protect your {formatCurrency(summary.safeBufferThreshold)} safety cushion.
-          </p>
+          <h1 className="text-2xl sm:text-[28px] lg:text-[30px] font-bold text-slate-900 tracking-tight mt-1">
+            What you can do next
+          </h1>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2.5 self-start lg:self-auto font-sans">
           <button
             onClick={() => setShowWhyModal(true)}
-            className="flex items-center gap-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-sm font-medium transition-colors shadow-2xs btn-interactive"
           >
-            <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
-            <span>Why is this predicted?</span>
+            <HelpCircle className="w-4 h-4 text-slate-400" />
+            <span>Why these recommendations?</span>
           </button>
 
           <button
             onClick={() => setActivePage('simulator')}
-            className="flex items-center gap-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 text-xs font-medium shadow-sm transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-xs transition-all active:scale-95 btn-interactive"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Simulator</span>
+            <SlidersHorizontal className="w-4 h-4 text-emerald-400" />
+            <span>Test in simulator</span>
           </button>
         </div>
       </div>
 
-      {/* Aggregate Opportunities Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <MetricCard
-          title="Recoverable Liquidity Cushion"
-          value={formatCurrency(totalPotentialRecovery)}
-          subValue="Available across open actions"
-          icon={DollarSign}
-        />
+      {/* 2. Executive Remediation Ticker */}
+      <div className="fintech-card rounded-xl border border-slate-200/90 p-4 shadow-2xs fintech-card-highlight font-sans">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+          <div className="space-y-1">
+            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+              <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+              Potential cash unlocked
+            </span>
+            <div className="text-2xl font-bold font-mono text-emerald-700 tabular-nums">
+              +{formatCurrency(totalPotentialRecovery)}
+            </div>
+            <p className="text-xs text-slate-500">Total liquidity released if all actions applied</p>
+          </div>
 
-        <MetricCard
-          title="Potential Runway Extension"
-          value={`+${totalRunwayExtensionDays} Days`}
-          subValue="Cumulative operating buffer"
-          icon={Clock}
-        />
+          <div className="space-y-1 pt-3 sm:pt-0 sm:pl-4">
+            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-emerald-600" />
+              Potential runway gained
+            </span>
+            <div className="text-2xl font-bold font-mono text-slate-900 tabular-nums">
+              +{totalRunwayExtensionDays} <span className="text-sm font-normal text-slate-400 font-sans">days</span>
+            </div>
+            <p className="text-xs text-slate-500">Immediate operating cushion gained</p>
+          </div>
 
-        <MetricCard
-          title="Implementation Status"
-          value={`${insights.filter((i) => i.status === 'applied').length} / ${insights.length}`}
-          subValue="Actions implemented in forecast"
-          icon={Sparkles}
-        />
+          <div className="space-y-1 pt-3 sm:pt-0 sm:pl-4">
+            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+              Actions applied
+            </span>
+            <div className="text-2xl font-bold font-mono text-slate-900 tabular-nums">
+              {appliedCount} <span className="text-sm font-normal text-slate-400 font-sans">/ {insights.length}</span>
+            </div>
+            <p className="text-xs text-slate-500">Reflected in forward cash forecast</p>
+          </div>
+        </div>
       </div>
 
-      {/* Primary Dominant Recommendation */}
-      {primaryInsight && (
-        <div className="rounded-lg border-2 border-rose-200 bg-rose-50/20 p-5 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
+      {/* Category Filter Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-sans">
+        <span className="text-xs font-semibold text-slate-500 shrink-0">
+          Filter area:
+        </span>
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold shrink-0 transition-colors ${
+              selectedCategory === cat
+                ? 'bg-slate-900 text-white shadow-2xs'
+                : 'bg-white border border-slate-200/90 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* 3. TIER 1: CRITICAL ACTIONS (IMMEDIATE INTERVENTION REQUIRED) */}
+      {criticalActions.length > 0 && (
+        <div className="space-y-3 font-sans">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <StatusBadge level={primaryInsight.priority} size="md" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-rose-800 font-mono">
-                Primary Actionable Deficit Remediation
-              </span>
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+                High priority actions
+              </h2>
             </div>
-            {primaryInsight.riskReductionEstimate && (
-              <span className="text-xs font-mono font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
-                Reduces Shortage Risk: {primaryInsight.riskReductionEstimate.fromRisk}% → {primaryInsight.riskReductionEstimate.toRisk}%
-              </span>
-            )}
+            <span className="text-xs text-rose-700 font-semibold">Immediate cash impact</span>
           </div>
 
-          <div>
-            <h2 className="text-base font-bold text-slate-900 tracking-tight">
-              {primaryInsight.title}
-            </h2>
-            <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs bg-white p-3.5 rounded border border-slate-200/80">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Financial Impact</span>
-                <span className="text-sm font-bold text-emerald-700 font-mono">
-                  {formatCurrency(primaryInsight.potentialCashImpact)}
-                </span>
-                <span className="text-slate-500 text-[11px] block">+{primaryInsight.runwayDaysImpact} days runway</span>
-              </div>
-              <div className="md:col-span-2">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Why This Matters</span>
-                <p className="text-slate-700 text-xs leading-relaxed mt-0.5">
-                  {primaryInsight.description}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-rose-100">
-            <div className="text-xs text-slate-700">
-              <strong className="text-slate-900 font-semibold">Action: </strong>
-              {primaryInsight.recommendedAction}
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {primaryInsight.actionType === 'invoice_reminder' && (
-                <button
-                  onClick={() => {
-                    const tData = primaryInsight.templateData || {};
-                    const matchingInvoice = dataset.invoices.find((i) => i.id === tData.invoiceId) || dataset.invoices[0];
-                    if (matchingInvoice) openInvoiceReminderModal(matchingInvoice);
-                  }}
-                  className="flex items-center gap-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 text-xs font-semibold shadow-sm"
+          <div className="space-y-3">
+            {criticalActions.map((action) => {
+              const isApplied = action.status === 'applied';
+              return (
+                <div
+                  key={action.id}
+                  className={`rounded-xl border p-5 transition-all shadow-2xs ${
+                    isApplied
+                      ? 'bg-slate-50/70 border-slate-200/80 text-slate-700'
+                      : 'bg-rose-50/30 border-rose-200/90 text-slate-900'
+                  }`}
                 >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>Send 1-Click Reminder</span>
-                </button>
-              )}
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    {/* Problem & Rationale */}
+                    <div className="space-y-1.5 max-w-2xl">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <StatusBadge level={action.priority} size="sm" />
+                        <span className="text-xs text-slate-500 font-medium">
+                          {action.category}
+                        </span>
+                        {action.riskReductionEstimate && (
+                          <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                            Risk: {action.riskReductionEstimate.fromRisk}% → {action.riskReductionEstimate.toRisk}%
+                          </span>
+                        )}
+                      </div>
 
-              <button
-                onClick={() => handleApply(primaryInsight.id)}
-                className="flex items-center gap-1.5 rounded bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 text-xs font-semibold shadow-sm"
-              >
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Implement in Forecast</span>
-              </button>
+                      <h3 className="text-base sm:text-[17px] font-semibold text-slate-900 tracking-tight">
+                        {action.title}
+                      </h3>
+
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        {action.description}
+                      </p>
+
+                      <div className="p-3 rounded-lg bg-white/80 border border-slate-200/70 text-sm text-slate-700">
+                        <strong className="text-slate-900 font-semibold block mb-0.5">
+                          Recommended action:
+                        </strong>
+                        {action.recommendedAction}
+                      </div>
+                    </div>
+
+                    {/* Impact Telemetry & CTAs */}
+                    <div className="flex lg:flex-col items-start lg:items-end justify-between gap-4 shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-200/70">
+                      <div className="text-left lg:text-right space-y-0.5">
+                        <div className="text-2xl font-bold font-mono text-emerald-700 tabular-nums">
+                          +{formatCurrency(action.potentialCashImpact)}
+                        </div>
+                        <div className="text-xs font-mono text-slate-500">
+                          +{action.runwayDaysImpact} days operating runway
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 font-sans">
+                        {action.actionType === 'invoice_reminder' && (
+                          <button
+                            onClick={() => {
+                              const inv = dataset.invoices.find((i) => i.id === action.templateData?.invoiceId) || dataset.invoices[0];
+                              if (inv) openInvoiceReminderModal(inv);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 text-sm font-semibold transition-colors shadow-2xs btn-interactive"
+                          >
+                            <Mail className="w-4 h-4 text-slate-500" />
+                            <span>Draft email reminder</span>
+                          </button>
+                        )}
+
+                        {isApplied ? (
+                          <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-semibold border border-emerald-300">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                            <span>Applied to forecast</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleApply(action.id)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-xs transition-all btn-interactive"
+                          >
+                            <Sparkles className="w-4 h-4 text-emerald-400" />
+                            <span>Apply to forecast</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 4. TIER 2: MEDIUM PRIORITY */}
+      {highPriorityActions.length > 0 && (
+        <div className="space-y-3 font-sans">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+                Medium priority recommendations
+              </h2>
+            </div>
+            <span className="text-xs text-slate-500">Buffer protection</span>
+          </div>
+
+          <div className="space-y-3">
+            {highPriorityActions.map((action) => {
+              const isApplied = action.status === 'applied';
+              return (
+                <div
+                  key={action.id}
+                  className={`rounded-xl border p-4 transition-all shadow-2xs ${
+                    isApplied
+                      ? 'bg-slate-50/70 border-slate-200/80 text-slate-700'
+                      : 'bg-white border-slate-200/90 text-slate-900 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1 max-w-xl">
+                      <div className="flex items-center gap-2">
+                        <StatusBadge level={action.priority} size="sm" />
+                        <span className="text-xs text-slate-500 font-medium">
+                          {action.category}
+                        </span>
+                      </div>
+                      <h4 className="font-semibold text-slate-900 text-base">{action.title}</h4>
+                      <p className="text-sm text-slate-600 leading-relaxed">{action.description}</p>
+                    </div>
+
+                    <div className="flex sm:flex-col items-start sm:items-end justify-between gap-3 shrink-0">
+                      <div className="text-left sm:text-right">
+                        <div className="text-base font-semibold font-mono text-slate-900">
+                          +{formatCurrency(action.potentialCashImpact)}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          +{action.runwayDaysImpact} days runway
+                        </div>
+                      </div>
+
+                      {isApplied ? (
+                        <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                          Active in forecast
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleApply(action.id)}
+                          className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold transition-colors btn-interactive"
+                        >
+                          Apply recommendation
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 5. TIER 3: WATCHLIST & DISCRETIONARY TRIMS */}
+      {watchlistActions.length > 0 && (
+        <div className="space-y-3 font-sans">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-slate-400" />
+              <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+                Discretionary spending & cost trims
+              </h2>
+            </div>
+            <span className="text-xs text-slate-500">Expense trimming</span>
+          </div>
+
+          <div className="rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-2xs">
+            <div className="divide-y divide-slate-100">
+              {watchlistActions.map((action) => {
+                const isApplied = action.status === 'applied';
+                return (
+                  <div
+                    key={action.id}
+                    className="p-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/80 transition-colors text-sm"
+                  >
+                    <div className="space-y-0.5 max-w-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-900 text-sm">{action.title}</span>
+                        <span className="text-xs text-slate-400">
+                          • {action.category}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500">{action.description}</p>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="text-right">
+                        <span className="font-mono font-bold text-slate-900 text-base">
+                          +{formatCurrency(action.potentialCashImpact)}
+                        </span>
+                        <div className="text-xs text-slate-400 font-mono">
+                          +{action.runwayDaysImpact}d
+                        </div>
+                      </div>
+
+                      {isApplied ? (
+                        <span className="text-xs text-emerald-700 font-semibold">Applied</span>
+                      ) : (
+                        <button
+                          onClick={() => handleApply(action.id)}
+                          className="px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs btn-interactive"
+                        >
+                          Apply
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       )}
 
-      {/* Secondary Recommendations List */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-            Additional Secondary Recommendations ({secondaryInsights.length})
-          </h3>
-          <span className="text-[11px] text-slate-400">Ranked by liquidity impact</span>
-        </div>
-
-        <div className="divide-y divide-slate-100">
-          {secondaryInsights.map((item) => {
-            const isApplied = item.status === 'applied';
-            return (
-              <div key={item.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="space-y-1 max-w-xl">
-                  <div className="flex items-center gap-2">
-                    <StatusBadge level={item.priority} size="sm" />
-                    <span className="font-semibold text-slate-900">{item.title}</span>
-                    <span className="text-slate-400">•</span>
-                    <span className="text-slate-500">{item.category}</span>
-                  </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
-                  <div className="text-right">
-                    <span className="font-mono font-bold text-slate-900 text-xs">
-                      {formatCurrency(item.potentialCashImpact)}
-                    </span>
-                    <span className="text-[10px] text-slate-400 block">+{item.runwayDaysImpact}d</span>
-                  </div>
-
-                  {!isApplied ? (
-                    <button
-                      onClick={() => handleApply(item.id)}
-                      className="px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 flex items-center gap-1 transition-colors"
-                    >
-                      <Check className="w-3 h-3 text-emerald-600" />
-                      <span>Apply</span>
-                    </button>
-                  ) : (
-                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      Applied
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Explainable Modal */}
+      {/* Explanation Modal */}
       {showWhyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-fade-in">
-          <div className="w-full max-w-xl rounded-lg bg-white p-5 shadow-xl border border-slate-200 space-y-3.5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-fade-in font-sans">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-lg w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <BrainCircuit className="w-4 h-4 text-emerald-700" />
-                <h3 className="text-sm font-bold text-slate-900">
-                  Feature Attribution: Why Was This Shortage Predicted?
+                <BrainCircuit className="w-5 h-5 text-slate-800" />
+                <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
+                  How recommendations are ranked
                 </h3>
               </div>
               <button
                 onClick={() => setShowWhyModal(false)}
-                className="p-1 rounded text-slate-400 hover:bg-slate-100"
+                className="p-1 rounded text-slate-400 hover:text-slate-700"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
-              The model continuously evaluates pending receivables against scheduled liabilities. Here are the core factors driving the <strong className="text-slate-900 font-mono">{riskPrediction.riskProbability}% shortage risk</strong>:
-            </p>
-
-            <div className="space-y-2 text-xs">
-              {riskPrediction.explainability.map((f) => (
-                <div
-                  key={f.id}
-                  className={`p-2.5 rounded border ${
-                    f.direction === 'increases_risk'
-                      ? 'bg-rose-50/40 border-rose-200'
-                      : 'bg-emerald-50/40 border-emerald-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-0.5 font-semibold">
-                    <span className="text-slate-900">{f.name}</span>
-                    <span className={`font-mono ${f.direction === 'increases_risk' ? 'text-rose-700' : 'text-emerald-700'}`}>
-                      {f.direction === 'increases_risk' ? `+${f.impactPercent}% Weight` : `-${f.impactPercent}% Weight`}
-                    </span>
-                  </div>
-                  <p className="text-slate-600 text-[11px]">{f.description}</p>
+            <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
+              <p>
+                Each action is prioritized by comparing the timing of scheduled payments against expected client receivables:
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-0.5">
+                  <strong className="text-slate-900 block font-semibold">1. Timing of the cash dip:</strong>
+                  <span>Identifies when your balance dips closest to the {formatCurrency(summary.safeBufferThreshold)} buffer (around Day {summary.dangerDaysFromNow || 12}). Actions that move funds before this date receive top priority.</span>
                 </div>
-              ))}
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-0.5">
+                  <strong className="text-slate-900 block font-semibold">2. Runway impact:</strong>
+                  <span>Calculates how many days of extra operating runway each action creates based on your monthly outflow rate.</span>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-0.5">
+                  <strong className="text-slate-900 block font-semibold">3. Practical feasibility:</strong>
+                  <span>Overdue invoices with existing customer relationships are prioritized for reminders over uncertain prospective sales.</span>
+                </div>
+              </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-100 flex justify-end">
+            <div className="pt-2 flex justify-end">
               <button
                 onClick={() => setShowWhyModal(false)}
-                className="px-3 py-1.5 rounded bg-slate-900 text-white text-xs font-medium"
+                className="px-4 py-2 rounded-lg bg-slate-900 text-white font-medium text-sm hover:bg-slate-800"
               >
-                Close
+                Understood
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Product Intelligence Journey Stepper */}
+      <IntelligenceJourneyFooter currentPage="insights" />
     </div>
   );
 };

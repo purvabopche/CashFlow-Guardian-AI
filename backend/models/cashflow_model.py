@@ -2,6 +2,7 @@ import os
 import json
 import joblib
 import numpy as np
+import pandas as pd
 from typing import Dict, Any, List, Optional
 from ..data.dataset_generator import FEATURE_COLUMNS
 
@@ -84,14 +85,19 @@ class CashFlowRiskEnsemble:
         if self.classifier is None or self.regressor_balance is None:
             self.load_models()
 
+        if not isinstance(feature_vector, pd.DataFrame):
+            feature_df = pd.DataFrame(feature_vector, columns=self.feature_names)
+        else:
+            feature_df = feature_vector
+
         # Classification
-        prob_matrix = self.classifier.predict_proba(feature_vector)[0]
+        prob_matrix = self.classifier.predict_proba(feature_df)[0]
         shortage_prob = float(prob_matrix[1]) if len(prob_matrix) > 1 else float(prob_matrix[0])
         shortage_prob_pct = round(min(98.5, max(3.5, shortage_prob * 100.0)), 1)
 
         # Regressions
-        pred_min_bal = float(self.regressor_balance.predict(feature_vector)[0])
-        est_days = float(self.regressor_days.predict(feature_vector)[0]) if self.regressor_days else 14.0
+        pred_min_bal = float(self.regressor_balance.predict(feature_df)[0])
+        est_days = float(self.regressor_days.predict(feature_df)[0]) if self.regressor_days else 14.0
         est_days_int = int(min(30, max(1, round(est_days))))
 
         # Risk Classification

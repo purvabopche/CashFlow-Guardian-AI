@@ -3,9 +3,15 @@ import {
   TrendingUp,
   Shield,
   ArrowDownLeft,
+  ArrowUpRight,
   AlertTriangle,
   Filter,
-  Info
+  CheckCircle2,
+  Calendar,
+  Layers,
+  Edit2,
+  Check,
+  X
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -20,8 +26,8 @@ import {
   Legend
 } from 'recharts';
 import { useFinancial } from '../context/FinancialContext';
-import { StatusBadge } from '../components/common/StatusBadge';
-import { MetricCard } from '../components/common/MetricCard';
+import { EmptyState } from '../components/common/EmptyState';
+import { IntelligenceJourneyFooter } from '../components/common/IntelligenceJourneyFooter';
 
 export const ForecastPage: React.FC = () => {
   const {
@@ -92,319 +98,404 @@ export const ForecastPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-200/80">
+    <div className="space-y-6 pb-12 animate-fade-in">
+      {/* 1. Workstation Header & Resolution Switchers */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200/90 font-sans">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Cash Flow Forecast & Risk Horizon
-            </h1>
-            <span className="text-xs font-mono text-slate-400">
-              • {forecastRangeDays}-Day Rolling Horizon
+          <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+            <span>Cash flow forecast</span>
+            <span className="text-slate-300">•</span>
+            <span>{forecastRangeDays}-day outlook</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+              ML forecast model
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Forward cash projection with scheduled disbursements and buffer breach detection.
-          </p>
+          <h1 className="text-2xl sm:text-[28px] lg:text-[30px] font-bold text-slate-900 tracking-tight mt-1">
+            Where your balance is heading
+          </h1>
         </div>
 
-        {/* Forecast Horizon Switcher */}
-        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-md border border-slate-200 self-start sm:self-auto">
-          {[30, 60, 90].map((days) => (
-            <button
-              key={days}
-              onClick={() => setForecastRangeDays(days)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                forecastRangeDays === days
-                  ? 'bg-white text-slate-900 font-semibold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {days}d
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricCard
-          title="Safe Buffer Target"
-          value={formatCurrency(summary.safeBufferThreshold)}
-          subValue={editingBuffer ? 'Enter target' : 'Click to adjust target'}
-          icon={Shield}
-          badge={
-            <button
-              onClick={() => setEditingBuffer(!editingBuffer)}
-              className="text-[11px] font-medium text-slate-500 hover:text-slate-900 underline"
-            >
-              {editingBuffer ? 'Cancel' : 'Edit'}
-            </button>
-          }
-        />
-
-        <MetricCard
-          title="Lowest Projected Point"
-          value={formatCurrency(forecast.lowestProjectedPoint)}
-          subValue={forecast.lowestProjectedPoint >= summary.safeBufferThreshold ? 'Safe Cushion Maintained' : 'Deficit Risk Detected'}
-          variant={forecast.lowestProjectedPoint >= summary.safeBufferThreshold ? 'highlight' : 'danger'}
-          icon={TrendingUp}
-        />
-
-        <MetricCard
-          title="Days in Deficit Zone"
-          value={`${forecast.daysBelowThresholdCount} Days`}
-          subValue={forecast.predictedBreachDate ? `First breach: ${forecast.predictedBreachDate}` : 'No buffer breach predicted'}
-          icon={AlertTriangle}
-        />
-
-        <MetricCard
-          title="Total Projected Inflow"
-          value={formatCurrency(forecast.totalProjectedInflow)}
-          subValue={`Projected Outflow: ${formatCurrency(forecast.totalProjectedOutflow)}`}
-          icon={ArrowDownLeft}
-        />
-      </div>
-
-      {/* Inline Safe Buffer Editor */}
-      {editingBuffer && (
-        <div className="rounded-md border border-slate-300 bg-slate-50 p-3 flex flex-col sm:flex-row items-center justify-between gap-3 animate-slide-up text-xs">
-          <div className="flex items-center gap-2">
-            <Info className="w-4 h-4 text-slate-600" />
-            <span className="text-slate-800 font-medium">
-              Configure minimum safe cash cushion:
-            </span>
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <input
-              type="number"
-              min="500"
-              step="500"
-              value={bufferInput}
-              onChange={(e) => setBufferInput(e.target.value)}
-              className="w-full sm:w-36 px-2.5 py-1 rounded border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400"
-            />
-            <button
-              onClick={handleBufferSave}
-              className="rounded bg-slate-900 hover:bg-slate-800 text-white px-3 py-1 text-xs font-semibold"
-            >
-              Save Target
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Composed Chart */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-              Projected Balance Trajectory & Inflow/Disbursement Schedule
-            </h3>
-            <p className="text-xs text-slate-500">
-              Black line shows daily projected closing balance; vertical bars show scheduled events.
-            </p>
-          </div>
-
-          {/* Granularity Switcher */}
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
+        <div className="flex items-center gap-3 flex-wrap self-start lg:self-auto font-sans">
+          {/* Resolution toggle */}
+          <div className="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs">
             <button
               onClick={() => setGranularity('daily')}
-              className={`px-2 py-0.5 rounded text-xs font-medium transition-all ${
-                granularity === 'daily' ? 'bg-white text-slate-900 font-semibold shadow-sm' : 'text-slate-600'
+              className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+                granularity === 'daily'
+                  ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Daily
             </button>
             <button
               onClick={() => setGranularity('weekly')}
-              className={`px-2 py-0.5 rounded text-xs font-medium transition-all ${
-                granularity === 'weekly' ? 'bg-white text-slate-900 font-semibold shadow-sm' : 'text-slate-600'
+              className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+                granularity === 'weekly'
+                  ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Weekly
             </button>
           </div>
+
+          {/* Horizon toggle */}
+          <div className="inline-flex rounded-lg bg-slate-200/80 p-0.5 border border-slate-300/80 text-xs">
+            {[30, 60, 90].map((days) => (
+              <button
+                key={days}
+                onClick={() => setForecastRangeDays(days)}
+                className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+                  forecastRangeDays === days
+                    ? 'bg-slate-900 text-white font-semibold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {days}d
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Analytical Telemetry Ticker */}
+      <div className="fintech-card rounded-xl border border-slate-200/90 p-4 shadow-2xs fintech-card-highlight">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+          {/* Safe Buffer Target */}
+          <div className="space-y-1 font-sans">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+                <Shield className="w-3.5 h-3.5 text-slate-500" />
+                Safe buffer
+              </span>
+              <button
+                onClick={() => setEditingBuffer(!editingBuffer)}
+                className="text-xs text-slate-500 hover:text-slate-800 underline"
+              >
+                {editingBuffer ? 'Cancel' : 'Edit'}
+              </button>
+            </div>
+            {editingBuffer ? (
+              <div className="flex items-center gap-1 mt-1">
+                <input
+                  type="number"
+                  value={bufferInput}
+                  onChange={(e) => setBufferInput(e.target.value)}
+                  className="w-24 px-2 py-0.5 border border-slate-300 rounded text-xs font-mono font-bold"
+                  autoFocus
+                />
+                <button
+                  onClick={handleBufferSave}
+                  className="p-1 rounded bg-slate-900 text-white hover:bg-slate-800"
+                >
+                  <Check className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <div className="text-2xl font-bold font-mono text-slate-900 tabular-nums">
+                {formatCurrency(summary.safeBufferThreshold)}
+              </div>
+            )}
+            <p className="text-xs text-slate-500">Minimum operating cushion</p>
+          </div>
+
+          {/* Lowest Point */}
+          <div className="space-y-1 pt-3 md:pt-0 md:pl-4 font-sans">
+            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5 text-slate-500" />
+              Lowest point
+            </span>
+            <div
+              className={`text-2xl font-bold font-mono tabular-nums ${
+                forecast.lowestProjectedPoint < summary.safeBufferThreshold
+                  ? 'text-rose-600'
+                  : 'text-slate-900'
+              }`}
+            >
+              {formatCurrency(forecast.lowestProjectedPoint)}
+            </div>
+            <p className="text-xs text-slate-500">
+              {forecast.lowestProjectedPoint < summary.safeBufferThreshold
+                ? 'Breaches safe threshold'
+                : 'Buffer maintained safely'}
+            </p>
+          </div>
+
+          {/* Breach Window */}
+          <div className="space-y-1 pt-3 md:pt-0 md:pl-4 font-sans">
+            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+              Days below buffer
+            </span>
+            <div className="text-2xl font-bold font-mono text-slate-900 tabular-nums">
+              {forecast.daysBelowThresholdCount}{' '}
+              <span className="text-xs font-normal text-slate-400 font-sans">days</span>
+            </div>
+            <p className="text-xs text-slate-500">
+              {forecast.predictedBreachDate ? `First breach: ${forecast.predictedBreachDate}` : 'Zero breach days'}
+            </p>
+          </div>
+
+          {/* Projected Inflows */}
+          <div className="space-y-1 pt-3 md:pt-0 md:pl-4 font-sans">
+            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+              <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
+              Expected inflows
+            </span>
+            <div className="text-2xl font-bold font-mono text-emerald-700 tabular-nums">
+              +{formatCurrency(forecast.totalProjectedInflow)}
+            </div>
+            <p className="text-xs text-slate-500">{forecastRangeDays}-day expected receipts</p>
+          </div>
+
+          {/* Projected Outflows */}
+          <div className="space-y-1 pt-3 md:pt-0 md:pl-4 font-sans">
+            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+              <ArrowUpRight className="w-3.5 h-3.5 text-rose-600" />
+              Expected outflows
+            </span>
+            <div className="text-2xl font-bold font-mono text-slate-900 tabular-nums">
+              -{formatCurrency(forecast.totalProjectedOutflow)}
+            </div>
+            <p className="text-xs text-slate-500">{forecastRangeDays}-day scheduled bills</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Core Forecasting Canvas (Hero Element) */}
+      <div className="fintech-card rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-4 fintech-card-highlight font-sans">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-slate-800" />
+              <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+                Projected cash trajectory ({forecastRangeDays} days)
+              </h2>
+            </div>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Simulated closing cash balances mapped against scheduled disbursements and client collections.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs font-sans text-slate-500">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-0.5 bg-emerald-600 inline-block" />
+              <span>Projected balance</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-0.5 border-t-2 border-dashed border-rose-500 inline-block" />
+              <span>Safe buffer ({formatCurrency(summary.safeBufferThreshold)})</span>
+            </div>
+          </div>
         </div>
 
-        <div className="h-72 w-full">
+        {/* Chart Canvas */}
+        <div className="h-88 w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={displayChartData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="2 2" stroke="#F1F5F9" vertical={false} />
+            <ComposedChart data={displayChartData} margin={{ top: 15, right: 15, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 10, fill: '#64748B' }}
+                tick={{ fontSize: 11, fill: '#64748B' }}
                 tickLine={false}
                 axisLine={{ stroke: '#E2E8F0' }}
               />
               <YAxis
-                yAxisId="balance"
-                orientation="left"
-                tick={{ fontSize: 10, fill: '#64748B' }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(val) => formatCurrency(val, true)}
-              />
-              <YAxis
-                yAxisId="flows"
-                orientation="right"
-                tick={{ fontSize: 9, fill: '#94A3B8' }}
+                tick={{ fontSize: 11, fill: '#64748B' }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(val) => formatCurrency(val, true)}
               />
               <Tooltip
-                content={({ active, payload, label }) => {
+                content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
+                    const isBelow = data.projectedBalance < summary.safeBufferThreshold;
+                    const variance = data.projectedBalance - summary.safeBufferThreshold;
                     return (
-                      <div className="rounded border border-slate-700 bg-slate-900 p-2.5 shadow-lg text-white text-xs space-y-1 z-30 min-w-[170px]">
-                        <div className="font-bold text-slate-200 border-b border-slate-800 pb-1 flex justify-between gap-3">
-                          <span>{label}</span>
-                          <span className={`text-[10px] uppercase font-mono ${data.isBelowThreshold ? 'text-rose-400' : 'text-emerald-400'}`}>
-                            {data.riskLevel}
-                          </span>
+                      <div className="rounded-xl border border-slate-800 bg-slate-950 text-white p-3.5 shadow-2xl text-xs space-y-1.5 min-w-[210px] font-sans">
+                        <div className="font-semibold text-slate-200 border-b border-slate-800 pb-1 flex justify-between">
+                          <span>{data.date}</span>
+                          <span className="text-xs text-slate-400 font-mono">Day {data.dayIndex}</span>
                         </div>
-                        <div className="flex justify-between gap-3 pt-0.5">
-                          <span className="text-slate-400">Balance:</span>
-                          <span className="font-bold text-white font-mono">{formatCurrency(data.projectedBalance)}</span>
+                        <div className="flex justify-between items-center text-slate-300">
+                          <span>Closing Balance:</span>
+                          <strong
+                            className={`font-mono text-sm ${isBelow ? 'text-rose-400' : 'text-emerald-400'}`}
+                          >
+                            {formatCurrency(data.projectedBalance)}
+                          </strong>
                         </div>
-                        <div className="flex justify-between gap-3">
-                          <span className="text-emerald-400">Inflow:</span>
-                          <span className="font-mono text-emerald-400">+{formatCurrency(data.predictedInflow)}</span>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <span className="text-rose-400">Outflow:</span>
-                          <span className="font-mono text-rose-400">-{formatCurrency(data.predictedOutflow)}</span>
-                        </div>
-                        {data.events && (
-                          <div className="pt-1 text-[10px] text-amber-300 border-t border-slate-800">
-                            • {data.events.join(', ')}
+                        {data.predictedInflow > 0 && (
+                          <div className="flex justify-between text-emerald-400 font-mono text-xs">
+                            <span>Expected Inflow:</span>
+                            <span>+{formatCurrency(data.predictedInflow)}</span>
                           </div>
                         )}
+                        {data.predictedOutflow > 0 && (
+                          <div className="flex justify-between text-rose-400 font-mono text-xs">
+                            <span>Scheduled Outflow:</span>
+                            <span>-{formatCurrency(data.predictedOutflow)}</span>
+                          </div>
+                        )}
+                        <div className="pt-1 border-t border-slate-800 flex justify-between text-xs text-slate-400 font-mono">
+                          <span>Buffer Variance:</span>
+                          <span className={variance >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                            {variance >= 0 ? `+${formatCurrency(variance)}` : formatCurrency(variance)}
+                          </span>
+                        </div>
                       </div>
                     );
                   }
                   return null;
                 }}
               />
-              <Legend
-                verticalAlign="top"
-                align="right"
-                wrapperStyle={{ paddingBottom: 10, fontSize: 11 }}
-              />
+              <Bar dataKey="predictedInflow" fill="#10B981" opacity={0.4} radius={[2, 2, 0, 0]} name="Expected Inflow" />
+              <Bar dataKey="predictedOutflow" fill="#F43F5E" opacity={0.3} radius={[2, 2, 0, 0]} name="Scheduled Outflow" />
               <ReferenceLine
-                yAxisId="balance"
                 y={summary.safeBufferThreshold}
-                stroke="#F43F5E"
-                strokeDasharray="3 3"
+                stroke="#E11D48"
+                strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{
-                  value: `Buffer (${formatCurrency(summary.safeBufferThreshold)})`,
-                  position: 'top',
-                  fill: '#F43F5E',
-                  fontSize: 10
+                  value: `Safe Buffer (${formatCurrency(summary.safeBufferThreshold)})`,
+                  fill: '#E11D48',
+                  fontSize: 11,
+                  position: 'insideTopRight',
+                  fontWeight: 600
                 }}
               />
-              <Bar
-                yAxisId="flows"
-                dataKey="predictedInflow"
-                name="Inflow Events"
-                fill="#10B981"
-                opacity={0.65}
-                radius={[2, 2, 0, 0]}
-              />
-              <Bar
-                yAxisId="flows"
-                dataKey="predictedOutflow"
-                name="Disbursements"
-                fill="#F43F5E"
-                opacity={0.55}
-                radius={[2, 2, 0, 0]}
-              />
+              <ReferenceLine y={0} stroke="#94A3B8" strokeWidth={1} />
               <Line
-                yAxisId="balance"
                 type="monotone"
                 dataKey="projectedBalance"
-                name="Projected Balance"
-                stroke="#0F172A"
-                strokeWidth={2}
+                stroke="#059669"
+                strokeWidth={2.5}
                 dot={false}
+                activeDot={{ r: 5, fill: '#059669', stroke: '#ffffff', strokeWidth: 2 }}
+                name="Projected Balance"
               />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Forecast Table */}
-      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <div className="p-3 border-b border-slate-200 flex items-center justify-between gap-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-            Daily Forecast Ledger
-          </h3>
-          <button
-            onClick={() => setFilterRiskOnly(!filterRiskOnly)}
-            className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
-              filterRiskOnly
-                ? 'bg-rose-50 border-rose-200 text-rose-800'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            {filterRiskOnly ? 'Showing Deficit Days Only' : 'Filter Deficit Days'}
-          </button>
+      {/* 4. Supporting Forecast Days Ledger */}
+      <div className="rounded-xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden font-sans">
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base sm:text-lg font-semibold text-slate-900 tracking-tight">
+              Daily forecast breakdown
+            </h3>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Day-by-day cash flow audit factoring in scheduled transactions and expected client receivables.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFilterRiskOnly(!filterRiskOnly)}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors btn-interactive ${
+                filterRiskOnly
+                  ? 'bg-rose-50 border-rose-200 text-rose-800'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span>{filterRiskOnly ? 'Showing deficit days only' : 'Filter deficit days'}</span>
+            </button>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold uppercase text-[10px] tracking-wider font-mono">
-                <th className="py-2.5 px-3">Date</th>
-                <th className="py-2.5 px-3">Projected Balance</th>
-                <th className="py-2.5 px-3 text-emerald-700">Inflow</th>
-                <th className="py-2.5 px-3 text-rose-700">Outflow</th>
-                <th className="py-2.5 px-3">Net</th>
-                <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3">Event Details</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filteredLedger.slice(0, 15).map((d) => (
-                <tr
-                  key={d.dayIndex}
-                  className={`hover:bg-slate-50/80 transition-colors ${
-                    d.isBelowThreshold ? 'bg-rose-50/30' : ''
-                  }`}
-                >
-                  <td className="py-2.5 px-3 font-mono font-medium text-slate-900">{d.date}</td>
-                  <td className="py-2.5 px-3 font-mono font-semibold">
-                    <span className={d.isBelowThreshold ? 'text-rose-600' : 'text-slate-900'}>
-                      {formatCurrency(d.projectedBalance)}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 font-mono text-emerald-700">
-                    +{formatCurrency(d.predictedInflow)}
-                  </td>
-                  <td className="py-2.5 px-3 font-mono text-rose-600">
-                    -{formatCurrency(d.predictedOutflow)}
-                  </td>
-                  <td className="py-2.5 px-3 font-mono font-medium">
-                    <span className={d.netChange >= 0 ? 'text-emerald-700' : 'text-rose-600'}>
-                      {d.netChange >= 0 ? `+${formatCurrency(d.netChange)}` : `-${formatCurrency(Math.abs(d.netChange))}`}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <StatusBadge level={d.riskLevel} size="sm" />
-                  </td>
-                  <td className="py-2.5 px-3 text-[11px] text-slate-600">
-                    {d.events ? d.events.join('; ') : '—'}
-                  </td>
+        {filteredLedger.length === 0 ? (
+          <div className="p-8">
+            <EmptyState
+              icon={CheckCircle2}
+              title="No deficit days predicted"
+              description="Across this forecast window, your closing balance remains safely above your target operating buffer."
+              actionLabel="Show all days"
+              onAction={() => setFilterRiskOnly(false)}
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse font-sans">
+              <thead>
+                <tr className="border-b border-slate-200/80 bg-slate-50/80 text-xs uppercase tracking-wider font-semibold text-slate-500">
+                  <th className="py-3.5 px-5">Day</th>
+                  <th className="py-3.5 px-5">Date</th>
+                  <th className="py-3.5 px-5 text-right">Inflow</th>
+                  <th className="py-3.5 px-5 text-right">Outflow</th>
+                  <th className="py-3.5 px-5 text-right">Net change</th>
+                  <th className="py-3.5 px-5 text-right">Ending balance</th>
+                  <th className="py-3.5 px-5 text-center">Buffer status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-sans text-sm">
+                {filteredLedger.map((day) => {
+                  const isBelow = day.isBelowThreshold;
+                  return (
+                    <tr
+                      key={day.dayIndex}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        isBelow ? 'bg-rose-50/30' : ''
+                      }`}
+                    >
+                      <td className="py-3.5 px-5 font-mono text-xs text-slate-500 font-semibold align-middle">
+                        Day {day.dayIndex}
+                      </td>
+                      <td className="py-3.5 px-5 font-mono text-slate-900 font-medium whitespace-nowrap text-sm align-middle">
+                        {day.date}
+                      </td>
+                      <td className="py-3.5 px-5 text-right font-mono text-emerald-700 whitespace-nowrap tabular-nums text-sm align-middle">
+                        {day.predictedInflow > 0 ? `+${formatCurrency(day.predictedInflow)}` : '—'}
+                      </td>
+                      <td className="py-3.5 px-5 text-right font-mono text-rose-600 whitespace-nowrap tabular-nums text-sm align-middle">
+                        {day.predictedOutflow > 0 ? `-${formatCurrency(day.predictedOutflow)}` : '—'}
+                      </td>
+                      <td
+                        className={`py-3.5 px-5 text-right font-mono font-medium whitespace-nowrap tabular-nums text-sm align-middle ${
+                          day.netChange > 0
+                            ? 'text-emerald-700'
+                            : day.netChange < 0
+                            ? 'text-rose-600'
+                            : 'text-slate-400'
+                        }`}
+                      >
+                        {day.netChange > 0 ? `+${formatCurrency(day.netChange)}` : day.netChange < 0 ? formatCurrency(day.netChange) : '₹0'}
+                      </td>
+                      <td className="py-3.5 px-5 text-right font-mono font-bold text-sm text-slate-900 whitespace-nowrap tabular-nums align-middle">
+                        <span className={isBelow ? 'text-rose-600' : 'text-slate-900'}>
+                          {formatCurrency(day.projectedBalance)}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-5 text-center whitespace-nowrap align-middle">
+                        {isBelow ? (
+                          <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">
+                            Deficit breach
+                          </span>
+                        ) : day.projectedBalance < summary.safeBufferThreshold * 1.2 ? (
+                          <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                            Tight buffer
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Safe cushion
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* Product Intelligence Journey Stepper */}
+      <IntelligenceJourneyFooter currentPage="forecast" />
     </div>
   );
 };

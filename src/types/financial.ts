@@ -50,16 +50,77 @@ export interface Invoice {
   description?: string;
 }
 
-export interface Payment {
+export type PaymentDirection = 'incoming' | 'outgoing';
+export type PaymentStatus = 'pending' | 'processing' | 'paid' | 'failed';
+
+export interface PaymentRecord {
   id: string;
-  vendor: string;
+  counterparty: string;
+  vendor: string; // legacy support
+  description: string;
   amount: number;
-  dueDate: string;
-  category: 'Payroll' | 'Rent' | 'SaaS' | 'Inventory' | 'Tax' | 'Vendor' | 'Utilities' | 'Other';
-  isFlexible: boolean;
+  direction: PaymentDirection;
+  category: string;
+  status: PaymentStatus;
+  scheduledDate: string;
+  dueDate: string; // legacy support
+  invoiceReference?: string;
+  isRecurring: boolean;
+  isFlexible?: boolean;
   urgency: 'Critical' | 'High' | 'Medium' | 'Low';
   notes?: string;
+  provider?: string;
+  referenceId?: string | null;
+  transactionId?: string | null;
+  createdAt?: string;
+  processedAt?: string | null;
 }
+
+export type Payment = PaymentRecord;
+
+export interface CreatePaymentInput {
+  counterparty: string;
+  vendor?: string;
+  description: string;
+  amount: number;
+  direction: PaymentDirection;
+  category: string;
+  scheduledDate: string;
+  dueDate?: string;
+  invoiceReference?: string;
+  isRecurring: boolean;
+  isFlexible?: boolean;
+  urgency?: 'Critical' | 'High' | 'Medium' | 'Low';
+  notes?: string;
+  provider?: string;
+}
+
+
+export interface PaymentImpactSnapshot {
+  currentBalance: number;
+  projectedLowestBalance: number;
+  shortageProbabilityPct: number;
+  safetyScore: number;
+  runwayDays: number;
+  riskLevel: RiskLevel;
+}
+
+export interface PaymentImpactDelta {
+  balance: number;
+  projectedLowestBalance: number;
+  shortageProbabilityPct: number;
+  safetyScore: number;
+  runwayDays: number;
+}
+
+export interface PaymentImpactMetrics {
+  before: PaymentImpactSnapshot;
+  after: PaymentImpactSnapshot;
+  delta: PaymentImpactDelta;
+  message: string;
+  payment: PaymentRecord;
+}
+
 
 export interface CashFlowSummary {
   currentBalance: number;

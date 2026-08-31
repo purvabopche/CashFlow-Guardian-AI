@@ -140,10 +140,37 @@ The training pipeline (`backend/data/dataset_generator.py`) generates a realisti
 | `GET` | `/api/dashboard` | Aggregated KPIs, safety score breakdown, and top risk factors |
 | `GET` | `/api/forecast` | 30-day projected daily closing balance series |
 | `GET` | `/api/insights` | Actionable recommendations with calculated cash recovery impact |
+| `GET` | `/api/payments` | Lists scheduled and settled payments for the active scenario |
+| `POST` | `/api/payments` | Creates and validates a pending incoming or outgoing payment |
+| `GET` | `/api/payments/{id}` | Retrieves specific payment record |
+| `POST` | `/api/payments/{id}/process` | Settles payment in Demo Mode, logs transaction, and recalculates ML risk |
 
 ---
 
-## 8. Running Locally
+## 8. Payment Intelligence Workflow
+
+CashFlow Guardian AI includes an integrated **Payment Intelligence** module connecting scheduled payment operations directly to the financial ledger and machine learning cash forecasting pipeline:
+
+```
+Payment Execution (Incoming / Outgoing)
+         ↓
+Transaction Ledger Update (Single Expense or Income Item)
+         ↓
+Rolling Cash Forecast Recalculation (Day-by-Day Timeline)
+         ↓
+ML Risk Prediction (Random Forest Classifier & Gradient Boosting Regressors)
+         ↓
+Updated Financial Position & Prescriptive AI Insights
+```
+
+### Operational Mode & Honest Scope
+- **Active Environment**: **Demo Payment Mode (Test Sandbox)** via `DemoPaymentProvider`.
+- **Real Money Transferred**: **None**. All test clearings, reference identifiers (`DEMO-TXN-XXXXXXXX`), and failure simulations are executed within a local sandbox with complete financial ledger isolation.
+- **Provider Architecture**: Built with a pluggable `PaymentProvider` interface. A `RazorpayPaymentProvider` adapter is architected and integration-ready, but transparently reports unconfigured unless valid `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` environment variables are supplied. No misleading claims of live gateway transactions are made.
+
+---
+
+## 9. Running Locally
 
 ### Prerequisites
 - Node.js 18+ & npm
@@ -183,7 +210,76 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 9. Demo Scenarios
+## 9. Payment Modes & Gateway Integration 💳
+
+CashFlow Guardian AI features a pluggable, institutional payment architecture supporting both simulated demonstration flows and real **Razorpay Test Mode** integration:
+
+```
+PaymentProvider
+├── DemoPaymentProvider      (Active default: offline mock settlement & test transaction generation)
+└── RazorpayPaymentProvider  (Test Mode: real order creation & cryptographic HMAC-SHA256 verification)
+```
+
+### 1. Payment Modes
+
+#### A. Demo Payment Mode (Default)
+- **Zero Configuration**: Ready out-of-the-box with no API keys or payment accounts required.
+- **Simulated Settlement**: Generates realistic test transaction IDs (`DEMO-TXN-...`) and balance deductions/inflows.
+- **Failure Simulation**: Allows testing liquidity resilience and transaction isolation when a disbursement is declined.
+- **Deterministic Recalculation**: Immediately updates 30-day forward cash forecasts and ML shortage risk.
+
+#### B. Razorpay Test Mode (Integration Ready)
+- **Real Order Creation**: Backend generates official Razorpay Test Mode orders (`order_...`) denominated in paise (INR × 100).
+- **Official Browser Checkout**: Dynamically loads the official Razorpay `checkout.js` modal.
+- **Cryptographic Signature Verification**: Verifies payment signatures strictly on the FastAPI backend using constant-time `hmac.compare_digest` with HMAC-SHA256. Payments are **never** marked as Paid prior to successful signature verification.
+- **Strict Idempotency & Duplicate Protection**: Duplicate verification requests for already-paid commitments return the existing transaction without duplicating ledger entries or double-deducting funds.
+- **Graceful Fallback Safety**: If credentials are missing, API calls fail, or checkout is cancelled, the platform displays:
+  > *"Payment gateway unavailable. Demo mode is still available."*
+
+### 2. Environment Configuration (Secure Setup)
+
+To activate Razorpay Test Mode, create a local `.env` file from `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Configure your environment variables in `.env`:
+
+```env
+# Payment Provider Selection ('demo' or 'razorpay')
+PAYMENT_PROVIDER=razorpay
+
+# Razorpay Test Mode Credentials
+# Generate your test keys from Razorpay Dashboard -> Account & Settings -> API Keys
+RAZORPAY_KEY_ID=rzp_test_your_key_id_here
+RAZORPAY_KEY_SECRET=your_test_key_secret_here
+```
+
+> [!SECURITY]
+> - `.env` is strictly included in `.gitignore` and is **never** committed to source control.
+> - `RAZORPAY_KEY_SECRET` remains exclusively on the backend server and is **never exposed to the frontend or API responses**.
+> - Only the public `RAZORPAY_KEY_ID` is used by the frontend to initialize Razorpay Checkout.
+> - If Razorpay keys are omitted or invalid, the system automatically defaults back to `DemoPaymentProvider`.
+
+### 3. Automated Payment Verification Suites
+
+Run the backend verification scripts to validate both payment providers:
+
+```bash
+# 1. Verify Demo Mode & Core Payment Ledger
+python -m backend.verify_payments
+
+# 2. Verify Razorpay Test Mode (Orders, Signatures, Rejection, Idempotency, Security)
+python -m backend.verify_razorpay
+
+# 3. Verify End-to-End Financial Flow & ML Risk Recalculation
+python -m backend.verify_e2e_flow
+```
+
+---
+
+## 10. Demo Scenarios
 
 The platform includes 3 distinct operational business profiles:
 
@@ -204,7 +300,7 @@ The platform includes 3 distinct operational business profiles:
 
 ---
 
-## 10. Future Scope
+## 11. Future Scope
 
 - 🏦 **Account Aggregator (AA) Integration**: Direct live bank feed sync via RBI-regulated Account Aggregators (Setu, Anumati).
 - 💳 **Payment Gateway Webhooks**: Real-time event webhooks from Razorpay, Stripe, and Cashfree for instant receivable tracking.
@@ -213,7 +309,7 @@ The platform includes 3 distinct operational business profiles:
 
 ---
 
-## 11. Authors & License
+## 12. Authors & License
 
 - Built for fintech innovation and hackathon excellence by **Purva Bopche**.
 - Repository: [github.com/purvabopche/CashFlow-Guardian-AI](https://github.com/purvabopche/CashFlow-Guardian-AI)
