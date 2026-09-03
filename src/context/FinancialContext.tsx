@@ -330,6 +330,21 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     }));
   }, [rawInsights, insightsState]);
 
+  const refreshBackendMetrics = async (activeDataset: FinancialDataset) => {
+    const [newSummary, newForecast, newRisk, newSim, newIns] = await Promise.all([
+      apiClient.getSummary(activeDataset),
+      apiClient.getForecast(activeDataset, forecastRangeDays, scenarioParams),
+      apiClient.getRiskPrediction(activeDataset, scenarioParams),
+      apiClient.simulateScenario(scenarioParams, activeDataset),
+      apiClient.getInsights(activeDataset)
+    ]);
+    setSummary(newSummary);
+    setForecast(newForecast);
+    setRiskPrediction(newRisk);
+    setScenarioResult(newSim);
+    setRawInsights(newIns);
+  };
+
   const addTransaction = async (txData: Omit<Transaction, 'id'>) => {
     const newTx: Transaction = {
       ...txData,
@@ -338,9 +353,21 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     if (backendStatus.connected) {
       try {
-        await apiClient.recordTransaction(txData, currentDatasetKey);
+        const resp = await apiClient.recordTransaction(txData, currentDatasetKey);
+        if (resp) {
+          const backendDataset = await apiClient.fetchBackendScenarioData(currentDatasetKey);
+          if (backendDataset) {
+            setDatasets(prev => ({
+              ...prev,
+              [currentDatasetKey]: backendDataset
+            }));
+            await refreshBackendMetrics(backendDataset);
+            showToast(`Transaction recorded: ${newTx.title} • Forecast & balance updated`);
+            return;
+          }
+        }
       } catch (err) {
-        console.warn('Backend sync failed, continuing locally:', err);
+        console.warn('Backend record transaction failed, falling back to local engine:', err);
       }
     }
 
@@ -360,7 +387,27 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     showToast(`Transaction recorded: ${newTx.title} • Forecast & balance updated`);
   };
 
-  const deleteTransaction = (id: string) => {
+  const deleteTransaction = async (id: string) => {
+    if (backendStatus.connected) {
+      try {
+        const resp = await apiClient.deleteTransaction(id, currentDatasetKey);
+        if (resp) {
+          const backendDataset = await apiClient.fetchBackendScenarioData(currentDatasetKey);
+          if (backendDataset) {
+            setDatasets(prev => ({
+              ...prev,
+              [currentDatasetKey]: backendDataset
+            }));
+            await refreshBackendMetrics(backendDataset);
+            showToast('Transaction removed • Ledger & cash trajectory recalculated');
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Backend delete transaction failed, falling back to local engine:', err);
+      }
+    }
+
     setDatasets(prev => {
       const active = prev[currentDatasetKey];
       return {

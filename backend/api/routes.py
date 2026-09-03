@@ -25,6 +25,7 @@ from ..services.cashflow_service import CashFlowService
 from ..database import (
     get_scenario_dict,
     db_add_transaction,
+    db_delete_transaction,
     db_update_payment_status,
     db_create_payment,
     db_record_webhook_event,
@@ -155,6 +156,19 @@ def add_transaction(tx: TransactionItem, scenario_id: str = Query(default="criti
     forecast = service.get_forecast(data, days_count=30)
     return {
         "message": f"Transaction '{tx.title}' recorded and recalculation completed",
+        "new_balance": res["new_balance"],
+        "summary": summary,
+        "forecast": forecast
+    }
+
+@router.delete("/transactions/{transaction_id}")
+def delete_transaction(transaction_id: str, scenario_id: str = Query(default="critical_shortage")):
+    res = db_delete_transaction(scenario_id, transaction_id)
+    data = get_scenario_dict(scenario_id)
+    summary = service.get_dashboard_summary(data)
+    forecast = service.get_forecast(data, days_count=30)
+    return {
+        "message": f"Transaction '{transaction_id}' removed and recalculation completed",
         "new_balance": res["new_balance"],
         "summary": summary,
         "forecast": forecast

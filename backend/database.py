@@ -337,6 +337,31 @@ def db_add_transaction(scenario_id: str, tx: Dict[str, Any]) -> Dict[str, Any]:
     conn.close()
     return {"id": tx_id, "new_balance": new_bal}
 
+def db_delete_transaction(scenario_id: str, tx_id: str) -> Dict[str, Any]:
+    init_db()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT amount, type FROM transactions WHERE id = ? AND scenario_id = ?;", (tx_id, scenario_id))
+    row = cursor.fetchone()
+    if row:
+        amt = float(row["amount"])
+        tx_type = row["type"]
+        if tx_type == "income":
+            cursor.execute("UPDATE scenarios SET current_balance = MAX(0.0, current_balance - ?) WHERE id = ?;", (amt, scenario_id))
+        else:
+            cursor.execute("UPDATE scenarios SET current_balance = current_balance + ? WHERE id = ?;", (amt, scenario_id))
+
+        cursor.execute("DELETE FROM transactions WHERE id = ? AND scenario_id = ?;", (tx_id, scenario_id))
+        conn.commit()
+
+    cursor.execute("SELECT current_balance FROM scenarios WHERE id = ?;", (scenario_id,))
+    new_bal_row = cursor.fetchone()
+    new_bal = new_bal_row["current_balance"] if new_bal_row else 0.0
+
+    conn.close()
+    return {"id": tx_id, "new_balance": new_bal}
+
 def db_update_payment_status(scenario_id: str, payment_id: str, status: str, ref_id: Optional[str] = None, tx_id: Optional[str] = None) -> Dict[str, Any]:
     init_db()
     conn = get_db_connection()

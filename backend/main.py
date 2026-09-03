@@ -41,6 +41,20 @@ else:
     # In production: default to localhost:3000 unless explicitly configured
     allowed_origins = default_dev_origins if is_production else ["*"]
 
+# Auto-detect Vercel deployment domain if present
+frontend_env = os.environ.get("FRONTEND_URL", "").strip()
+vercel_url_env = os.environ.get("VERCEL_URL", "").strip()
+additional_origins = []
+if frontend_env:
+    additional_origins.append(frontend_env if frontend_env.startswith("http") else f"https://{frontend_env}")
+if vercel_url_env:
+    additional_origins.append(vercel_url_env if vercel_url_env.startswith("http") else f"https://{vercel_url_env}")
+
+if allowed_origins != ["*"]:
+    for extra in additional_origins:
+        if extra not in allowed_origins:
+            allowed_origins.append(extra)
+
 allow_credentials = allowed_origins != ["*"]
 
 app.add_middleware(

@@ -19,7 +19,7 @@ import {
 } from '../utils/financialCalculations';
 import { BUSINESS_DATASETS } from '../data/mockFinancialData';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export interface BackendStatus {
   connected: boolean;
@@ -462,6 +462,23 @@ export class CashFlowApiClient {
         }
       } catch (err) {
         console.warn('FastAPI record transaction error:', err);
+      }
+    }
+    return null;
+  }
+
+  public async deleteTransaction(txId: string, datasetId: string): Promise<any> {
+    if (this.backendStatus.connected) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/transactions/${txId}?scenario_id=${datasetId}`, {
+          method: 'DELETE',
+          signal: AbortSignal.timeout(3000)
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('FastAPI delete transaction error:', err);
       }
     }
     return null;
