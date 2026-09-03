@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from backend.models.schemas import ActionInsight, InsightCategory, PriorityLevel
+from ..models.schemas import ActionInsight, InsightCategory, PriorityLevel
 
 class InsightsService:
     @staticmethod

@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
-from backend.models.schemas import ScenarioParams, ScenarioResult
-from backend.services.forecast_service import forecast_service
-from backend.services.ml_engine import ml_engine
+from ..models.schemas import ScenarioParams, ScenarioResult
+from .forecast_service import forecast_service
+from .ml_engine import ml_engine
 
 class ScenarioService:
     @staticmethod

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
-from backend.models.schemas import ForecastDay, ForecastResponse, RiskLevel
+from ..models.schemas import ForecastDay, ForecastResponse, RiskLevel
 
 class ForecastService:
     @staticmethod

@@ -9,6 +9,17 @@ DB_FILE = os.environ.get("DATABASE_URL", "cashflow_guardian.db").replace("sqlite
 if not DB_FILE:
     DB_FILE = "cashflow_guardian.db"
 
+# Handle Vercel serverless read-only filesystem environment
+if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or not os.access(".", os.W_OK):
+    tmp_db = os.path.join("/tmp", "cashflow_guardian.db")
+    if not os.path.exists(tmp_db) and os.path.exists(DB_FILE):
+        import shutil
+        try:
+            shutil.copy2(DB_FILE, tmp_db)
+        except Exception:
+            pass
+    DB_FILE = tmp_db
+
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row

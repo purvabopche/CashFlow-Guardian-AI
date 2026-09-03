@@ -1,6 +1,6 @@
 import math
 from typing import List, Dict, Any
-from backend.models.schemas import RiskPrediction, RiskLevel, ExplainableFactor
+from ..models.schemas import RiskPrediction, RiskLevel, ExplainableFactor
 
 class CashFlowMLEngine:
     """
