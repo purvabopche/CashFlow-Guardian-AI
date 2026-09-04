@@ -2,28 +2,76 @@ import datetime
 import uuid
 from typing import Dict, Any, List, Optional
 import numpy as np
-from ..models.cashflow_model import CashFlowRiskEnsemble
-from ..models.schemas import (
-    DashboardSummaryResponse,
-    SafetyScoreBreakdown,
-    ForecastResponse,
-    ForecastDayPoint,
-    RiskAnalysisResponse,
-    ExplainableFactorItem,
-    ActionInsightItem,
-    ScenarioSimulateRequest,
-    ScenarioSimulateResponse,
-    SimulationPoint,
-    PaymentRecord,
-    CreatePaymentRequest,
-    TransactionItem,
-    PaymentImpactSnapshot,
-    PaymentImpactDelta,
-    PaymentImpactSummary,
-    ProcessPaymentResponse,
-    RazorpayOrderResponse
-)
-from .payment_provider import get_payment_provider, RazorpayPaymentProvider
+try:
+    from backend.models.cashflow_model import CashFlowRiskEnsemble
+    from backend.models.schemas import (
+        DashboardSummaryResponse,
+        SafetyScoreBreakdown,
+        ForecastResponse,
+        ForecastDayPoint,
+        RiskAnalysisResponse,
+        ExplainableFactorItem,
+        ActionInsightItem,
+        ScenarioSimulateRequest,
+        ScenarioSimulateResponse,
+        SimulationPoint,
+        PaymentRecord,
+        CreatePaymentRequest,
+        TransactionItem,
+        PaymentImpactSnapshot,
+        PaymentImpactDelta,
+        PaymentImpactSummary,
+        ProcessPaymentResponse,
+        RazorpayOrderResponse
+    )
+    from backend.services.payment_provider import get_payment_provider, RazorpayPaymentProvider
+except (ImportError, ValueError):
+    try:
+        from models.cashflow_model import CashFlowRiskEnsemble
+        from models.schemas import (
+            DashboardSummaryResponse,
+            SafetyScoreBreakdown,
+            ForecastResponse,
+            ForecastDayPoint,
+            RiskAnalysisResponse,
+            ExplainableFactorItem,
+            ActionInsightItem,
+            ScenarioSimulateRequest,
+            ScenarioSimulateResponse,
+            SimulationPoint,
+            PaymentRecord,
+            CreatePaymentRequest,
+            TransactionItem,
+            PaymentImpactSnapshot,
+            PaymentImpactDelta,
+            PaymentImpactSummary,
+            ProcessPaymentResponse,
+            RazorpayOrderResponse
+        )
+        from services.payment_provider import get_payment_provider, RazorpayPaymentProvider
+    except (ImportError, ValueError):
+        from ..models.cashflow_model import CashFlowRiskEnsemble
+        from ..models.schemas import (
+            DashboardSummaryResponse,
+            SafetyScoreBreakdown,
+            ForecastResponse,
+            ForecastDayPoint,
+            RiskAnalysisResponse,
+            ExplainableFactorItem,
+            ActionInsightItem,
+            ScenarioSimulateRequest,
+            ScenarioSimulateResponse,
+            SimulationPoint,
+            PaymentRecord,
+            CreatePaymentRequest,
+            TransactionItem,
+            PaymentImpactSnapshot,
+            PaymentImpactDelta,
+            PaymentImpactSummary,
+            ProcessPaymentResponse,
+            RazorpayOrderResponse
+        )
+        from .payment_provider import get_payment_provider, RazorpayPaymentProvider
 
 
 class CashFlowService:

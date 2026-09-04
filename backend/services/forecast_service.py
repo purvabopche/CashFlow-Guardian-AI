@@ -1,6 +1,12 @@
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
-from ..models.schemas import ForecastDay, ForecastResponse, RiskLevel
+try:
+    from backend.models.schemas import ForecastDay, ForecastResponse, RiskLevel
+except (ImportError, ValueError):
+    try:
+        from models.schemas import ForecastDay, ForecastResponse, RiskLevel
+    except (ImportError, ValueError):
+        from ..models.schemas import ForecastDay, ForecastResponse, RiskLevel
 
 class ForecastService:
     @staticmethod

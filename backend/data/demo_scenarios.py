@@ -1,5 +1,11 @@
 from typing import Dict, Any
-from .synthetic_generator import generate_synthetic_historical_stream
+try:
+    from backend.data.synthetic_generator import generate_synthetic_historical_stream
+except (ImportError, ValueError):
+    try:
+        from data.synthetic_generator import generate_synthetic_historical_stream
+    except (ImportError, ValueError):
+        from .synthetic_generator import generate_synthetic_historical_stream
 
 def get_demo_scenarios() -> Dict[str, Dict[str, Any]]:
     # Generate 60 days of synthetic historical transactions for each profile

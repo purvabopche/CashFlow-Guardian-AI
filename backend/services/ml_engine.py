@@ -1,6 +1,12 @@
 import math
 from typing import List, Dict, Any
-from ..models.schemas import RiskPrediction, RiskLevel, ExplainableFactor
+try:
+    from backend.models.schemas import RiskPrediction, RiskLevel, ExplainableFactor
+except (ImportError, ValueError):
+    try:
+        from models.schemas import RiskPrediction, RiskLevel, ExplainableFactor
+    except (ImportError, ValueError):
+        from ..models.schemas import RiskPrediction, RiskLevel, ExplainableFactor
 
 class CashFlowMLEngine:
     """

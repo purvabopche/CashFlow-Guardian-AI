@@ -4,33 +4,91 @@ import datetime
 from fastapi import APIRouter, Query, HTTPException, Request, Header
 from typing import List, Dict, Any, Optional
 
-from ..models.schemas import (
-    DashboardSummaryResponse,
-    ForecastResponse,
-    RiskAnalysisResponse,
-    ActionInsightItem,
-    ScenarioSimulateRequest,
-    ScenarioSimulateResponse,
-    CustomPredictRequest,
-    TransactionItem,
-    PaymentRecord,
-    CreatePaymentRequest,
-    ProcessPaymentRequest,
-    ProcessPaymentResponse,
-    PaymentConfigResponse,
-    RazorpayOrderResponse,
-    RazorpayVerifyRequest
-)
-from ..services.cashflow_service import CashFlowService
-from ..database import (
-    get_scenario_dict,
-    db_add_transaction,
-    db_delete_transaction,
-    db_update_payment_status,
-    db_create_payment,
-    db_record_webhook_event,
-    db_reset_demo_baseline
-)
+try:
+    from backend.models.schemas import (
+        DashboardSummaryResponse,
+        ForecastResponse,
+        RiskAnalysisResponse,
+        ActionInsightItem,
+        ScenarioSimulateRequest,
+        ScenarioSimulateResponse,
+        CustomPredictRequest,
+        TransactionItem,
+        PaymentRecord,
+        CreatePaymentRequest,
+        ProcessPaymentRequest,
+        ProcessPaymentResponse,
+        PaymentConfigResponse,
+        RazorpayOrderResponse,
+        RazorpayVerifyRequest
+    )
+    from backend.services.cashflow_service import CashFlowService
+    from backend.database import (
+        get_scenario_dict,
+        db_add_transaction,
+        db_delete_transaction,
+        db_update_payment_status,
+        db_create_payment,
+        db_record_webhook_event,
+        db_reset_demo_baseline
+    )
+except (ImportError, ValueError):
+    try:
+        from models.schemas import (
+            DashboardSummaryResponse,
+            ForecastResponse,
+            RiskAnalysisResponse,
+            ActionInsightItem,
+            ScenarioSimulateRequest,
+            ScenarioSimulateResponse,
+            CustomPredictRequest,
+            TransactionItem,
+            PaymentRecord,
+            CreatePaymentRequest,
+            ProcessPaymentRequest,
+            ProcessPaymentResponse,
+            PaymentConfigResponse,
+            RazorpayOrderResponse,
+            RazorpayVerifyRequest
+        )
+        from services.cashflow_service import CashFlowService
+        from database import (
+            get_scenario_dict,
+            db_add_transaction,
+            db_delete_transaction,
+            db_update_payment_status,
+            db_create_payment,
+            db_record_webhook_event,
+            db_reset_demo_baseline
+        )
+    except (ImportError, ValueError):
+        from ..models.schemas import (
+            DashboardSummaryResponse,
+            ForecastResponse,
+            RiskAnalysisResponse,
+            ActionInsightItem,
+            ScenarioSimulateRequest,
+            ScenarioSimulateResponse,
+            CustomPredictRequest,
+            TransactionItem,
+            PaymentRecord,
+            CreatePaymentRequest,
+            ProcessPaymentRequest,
+            ProcessPaymentResponse,
+            PaymentConfigResponse,
+            RazorpayOrderResponse,
+            RazorpayVerifyRequest
+        )
+        from ..services.cashflow_service import CashFlowService
+        from ..database import (
+            get_scenario_dict,
+            db_add_transaction,
+            db_delete_transaction,
+            db_update_payment_status,
+            db_create_payment,
+            db_record_webhook_event,
+            db_reset_demo_baseline
+        )
 
 router = APIRouter(prefix="/api", tags=["CashFlow Guardian API"])
 service = CashFlowService()

@@ -4,7 +4,13 @@ import joblib
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, List, Optional
-from ..data.dataset_generator import FEATURE_COLUMNS
+try:
+    from backend.data.dataset_generator import FEATURE_COLUMNS
+except (ImportError, ValueError):
+    try:
+        from data.dataset_generator import FEATURE_COLUMNS
+    except (ImportError, ValueError):
+        from ..data.dataset_generator import FEATURE_COLUMNS
 
 MODELS_DIR = os.path.dirname(os.path.abspath(__file__))
 CLF_PATH = os.path.join(MODELS_DIR, "shortage_classifier.joblib")

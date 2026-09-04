@@ -1,5 +1,11 @@
 from typing import List, Dict, Any
-from ..models.schemas import ActionInsight, InsightCategory, PriorityLevel
+try:
+    from backend.models.schemas import ActionInsight, InsightCategory, PriorityLevel
+except (ImportError, ValueError):
+    try:
+        from models.schemas import ActionInsight, InsightCategory, PriorityLevel
+    except (ImportError, ValueError):
+        from ..models.schemas import ActionInsight, InsightCategory, PriorityLevel
 
 class InsightsService:
     @staticmethod

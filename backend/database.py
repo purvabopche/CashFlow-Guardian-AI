@@ -3,7 +3,13 @@ import sqlite3
 import json
 import datetime
 from typing import Dict, Any, List, Optional
-from .data.demo_scenarios import get_demo_scenarios
+try:
+    from backend.data.demo_scenarios import get_demo_scenarios
+except (ImportError, ValueError):
+    try:
+        from data.demo_scenarios import get_demo_scenarios
+    except (ImportError, ValueError):
+        from .data.demo_scenarios import get_demo_scenarios
 
 DB_FILE = os.environ.get("DATABASE_URL", "cashflow_guardian.db").replace("sqlite:///", "").replace("sqlite://", "")
 if not DB_FILE:

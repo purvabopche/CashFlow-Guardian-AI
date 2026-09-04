@@ -5,13 +5,21 @@ from pathlib import Path
 # Ensure root directory and backend directory are in sys.path for serverless function runtimes
 _root = Path(__file__).resolve().parent.parent
 _backend = Path(__file__).resolve().parent
-for _p in [str(_root), str(_backend)]:
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+
+for _p in [str(_backend), str(_root)]:
+    if _p in sys.path:
+        sys.path.remove(_p)
+    sys.path.insert(0, _p)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.routes import router as api_router
+try:
+    from backend.api.routes import router as api_router
+except (ImportError, ValueError):
+    try:
+        from api.routes import router as api_router
+    except (ImportError, ValueError):
+        from .api.routes import router as api_router
 
 app = FastAPI(
     title="CashFlow Guardian AI - Predictive Liquidity Intelligence API",
@@ -91,7 +99,8 @@ def root():
         "ml_engine": "Random Forest Cash Shortage Classifier & Gradient Boosting Regressors"
     }
 
-# Top-level health endpoint (for platforms that check /health instead of /api/health)
+# Top-level health endpoints (supports both /api/health and /health directly on app)
+@app.get("/api/health")
 @app.get("/health")
 def health_check_root():
     return {
